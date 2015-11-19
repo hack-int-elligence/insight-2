@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Insight</title  >
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.min.css" type="text/css">
+
+    <!-- Custom Fonts -->
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+    <!-- Plugin CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.4.0/animate.min.css" type="text/css">
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/2.2.0/mustache.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond./views/js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body id="page-top">
+    <div style="margin:auto; text-align: center; padding:25% 0">
+        <h1 style="padding: 15px 0">Insight Test Page (University of Pennsylvania)</h1>
+        <form>
+            Latitude:
+            <input id="lat" type="text" name="latitude" placeholder="latitude (39.9529720)"></input>
+            Longitude:
+            <input id="long" type="text" name="longitude" placeholder="longitude (-75.2028450)"></input>
+            <hr />
+            <span id="insight" value="search">SEARCH</span>
+            <br />
+            <span id="checkin-test" vale="checkin">CHECK IN</span>
+        </form>
+    </div>
+    <div id="results">
+        <template id="data-template">
+            <p><img height="30" width="30" src="{{icon}}"></img><strong>{{ name }}</strong>, lat: {{ location.lat }}; long: {{ location.lng}}, {{ address }}</p>
+        </template>
+    </div>
+    <script type="text/javascript">
+    $('#lat').val(39.9529720);
+    $('#long').val(-175.2028450);
+    console.log($('#data-template').html());
+    var template = $('#data-template').html();
+    Mustache.parse(template);
+    $('#insight').on('click', function(e) {
+         var lat = Number($('#lat').val());
+         var lon = Number($('#long').val());
+         $('#results').empty();
+         $.post('/insight', {
+            latitude: lat,
+            longitude: lon
+        }, function(data) {
+            for (var i = 0; i < data.length; i++) {
+                $('#results').append($(Mustache.render(template, data[i])));
+            }
+        }, 'json');
+    });
+    $('#checkin-test').on('click', function(e) {
+        var lat = Number($('#lat').val());
+        var lon = Number($('#long').val());
+        var authTokenTest = 'CAAJlnCaKfaEBAABfkmCvxwRoXc1o9bimsZCJk0RTyFlZCYYD6qvf6XKbZCq5zhGSF6j1s0NjSWxZBmdQIinUxBc7w1GfCgBlzRguaadz6YNiSo0mMyTkpZCKXrZCqPSpb5asnR1R5mIDNE5mZC3Oj7VPaHUibJRkgTSNbSTlWkcpxwCIExee9r8Nq9M51bCq1ZA1D6JqXnh6E0CcSwjpbrDBfTvIXqmTxHsnInwLuZAFzIEGSvqqVVIssPLYVQkyezEcZD';
+        $.post('/fb_checkin', {
+            latitude: lat,
+            longitude: lon,
+            authToken: authTokenTest
+        }, function(data) {
+            console.log(data);
+        }, 'json');
+    });
+    </script>
+    <style>
+        #insight:hover {
+            cursor: pointer;
+            background: rgba(0,0,0,0.5));
+        }
+    </style>
+</body>
+
+</html>
