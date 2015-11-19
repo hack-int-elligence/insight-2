@@ -1,5 +1,5 @@
 var express = require('express');
-var debug = require('debug')('geocode');
+var debug = require('debug')('facebook');
 var fb = require('fb');
 var moment = require('moment');
 var request = require('request');
