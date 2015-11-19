@@ -25,6 +25,9 @@ var yelp = new Yelp({
     token: _YELP_TOKEN,
     token_secret: _YELP_TOKEN_SECRET,
 });
+yelp.search({ term: 'food', location: 'the white house', radius_filter: 2000}).then(function (data) {
+    console.log(data);
+});
 
 // Number of results returned from Google Places
 var THRESHOLD = 10;
