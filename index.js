@@ -5,6 +5,7 @@ var compression = require('compression');
 var path = require('path');
 
 var geocodeData = require('./routes/geocode');
+var facebookData = require('./routes/facebook');
 
 var app = express()
 
@@ -23,6 +24,7 @@ app.use(bodyParser.urlencoded({
 
 // route handlers go here
 app.use(geocodeData);
+app.use(facebookData);
 
 app.use(function(req, res, next) {
 	res.sendStatus(404);
