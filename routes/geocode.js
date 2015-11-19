@@ -3,6 +3,8 @@ var debug = require('debug')('geocode');
 var fb = require('fb');
 var moment = require('moment');
 var request = require('request');
+var Yelp = require('yelp')['default'];
+
 
 var g_API_key = ['AIzaSyD4C_0grHO3gWxgCLGbndJy_ejDXbKNDXk', ];
 var g_API_key_offset = 0;
@@ -11,6 +13,18 @@ var bing_maps_api_key = "AjP-pU7xn-GBz_RLNnVL6oUckIzfj-q90bdJ69_wLtviEa7ZnBf7PHb
 
 var hat = require('hat');
 var request = require('request');
+
+var _YELP_CONSUMER_KEY = 'IVF6e5lDT_NR9jNshDV8uQ';
+var _YELP_CONSUMER_SECRET = '3LF8pKRq_f6nFYhlo8TGD_GXLOc';
+var _YELP_TOKEN = 'sn83YG9PaagNXwIgaEeCdC06Sx8wq_GK';
+var _YELP_TOKEN_SECRET = '4K2GBXITOJryAWrpO9abtp01Zp0';
+
+var yelp = new Yelp({
+    consumer_key: _YELP_CONSUMER_KEY,
+    consumer_secret: _YELP_CONSUMER_SECRET,
+    token: _YELP_TOKEN,
+    token_secret: _YELP_TOKEN_SECRET,
+});
 
 // Number of results returned from Google Places
 var THRESHOLD = 10;
@@ -100,11 +114,6 @@ router.get('/test', function (req, res) {
     res.render('test');
 });
 
-router.post('/insight', function(req, res, next) {
-    // req.usernaklfnadfmn 
-    next();
-});
-
 router.post('/insight', function(req, res) {
     // require the google places module inside the route handler to change the config key
     var googleplaces = require('googleplaces')(g_API_key[g_API_key_offset], 'json');
@@ -113,7 +122,6 @@ router.post('/insight', function(req, res) {
 
     // set radius
     var placeRadius = Number(req.body.radius || '500');
-
 
     /*
      * Recrusive asynchronous callback, which calls the final execution
