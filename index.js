@@ -4,6 +4,7 @@ var bodyParser = require('body-parser');
 var compression = require('compression');
 var path = require('path');
 
+var parseThings = require('./routes/parse');
 var geocodeData = require('./routes/geocode');
 var facebookData = require('./routes/facebook');
 
@@ -23,6 +24,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 // route handlers go here
+app.use(parseThings); // order matters!
 app.use(geocodeData);
 app.use(facebookData);
 

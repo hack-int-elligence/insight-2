@@ -1,16 +1,51 @@
 var express = require('express');
 var debug = require('debug')('facebook');
-var fb = require('fb');
 var moment = require('moment');
 var request = require('request');
 var hat = require('hat');
 var request = require('request');
+var Parse = require('parse/node').Parse;
+
+// so insecure...but who cares anyway?
+Parse.initialize('selZeqRUEyS0xb2UAAot2AI2pT8a2F7ggqAbyByw', 'xzy1tbgOSU6NNefFJ26RbRacuYyh0E99ikRpmvjO');
+
+var InsightUser = new (Parse.Object.extend('InsightUser'))();
 
 var router = express.Router();
 
 var FACEBOOK_APP_ID = '674671289335201';
 var FACEBOOK_APP_SECRET = 'a7e1c3c097560ba5ae65015405a1f19e';
 
-
+/* This runs for all POST requests to the server */
+router.post('/*', function(req, res, next) {
+  // if this is a POST request that contains an authToken, update the Parse object
+  if (req.body.authToken) {
+    var FB = require('fb');
+    FB.setAccessToken(req.body.authToken);
+    FB.api('me', function(facebookUserData) {
+      // facebookUserData format:
+      // name: String, id: String
+      var facebookUserId = facebookUserData.id;
+      var facebookUserName = facebookUserData.name;
+      var lastActive = new moment().unix();
+      InsightUser.save({
+        facebookUserId: facebookUserId,
+        facebookUserName: facebookUserName,
+        lastActive: lastActive
+      }, {
+        success: function(currentInsightUser) {
+          console.log('Updated lastActive timestamp for ' + facebookUserName);
+          next();
+        },
+        error: function(object, err) {
+          console.log('Parse save error!');
+          console.log(object);
+          console.log(err);
+          res.send(err);
+        }
+      });
+    });
+  }
+});
 
 module.exports = router;
