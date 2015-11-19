@@ -12,13 +12,6 @@ var bing_maps_api_key = "AjP-pU7xn-GBz_RLNnVL6oUckIzfj-q90bdJ69_wLtviEa7ZnBf7PHb
 var hat = require('hat');
 var request = require('request');
 
-var YALE_API_BASE_URL = 'https://gw.its.yale.edu';
-
-var YALE_API_KEY = 'l7xx9ebbe4eb200e44679ab221819d1c2b3f';
-// TEST URL: https://gw.its.yale.edu/soa-gateway/buildings/feed?type=json?apikey=l7xxd6809c22c97b4f96bb8361a201f71fb3
-var FACEBOOK_APP_ID = '674671289335201';
-var FACEBOOK_APP_SECRET = 'a7e1c3c097560ba5ae65015405a1f19e';
-
 // Number of results returned from Google Places
 var THRESHOLD = 10;
 
@@ -97,23 +90,6 @@ var invertHeadingsFromArray = function(array) {
     return obj;
 };
 
-/*
- * Gets Yale building data, for YHack demo
- */
-var getYaleBuildings = function(callback) {
-    var requestUrl = 'https://gw.its.yale.edu/soa-gateway/buildings/feed?type=json&apikey=' + YALE_API_KEY;
-    request(requestUrl, function(error, response, body) {
-        if (!error && response.statusCode == 200) {
-            // JSON of building data is in 'body'
-            // contains a lot of information, the keys of which can be standardised based on app needs
-            callback(JSON.parse(body)['ServiceResponse']['Buildings']['Building']);
-        } else {
-            // return empty array so that the rest of the data is unspoiled
-            callback([]);
-        }
-    });
-};
-
 var router = express.Router();
 
 router.get('/', function(req, res) {
@@ -126,7 +102,7 @@ router.get('/test', function (req, res) {
 
 router.post('/insight', function(req, res, next) {
     // req.usernaklfnadfmn 
-    //next()
+    next();
 });
 
 router.post('/insight', function(req, res) {
@@ -138,52 +114,6 @@ router.post('/insight', function(req, res) {
     // set radius
     var placeRadius = Number(req.body.radius || '500');
 
-    /*
-     * YALE BUILDINGS
-     */
-    // add in yale building data - should currently fail and return original data without API key
-    var addYaleBuildings = function(existingArray, callback) {
-        getYaleBuildings(function(buildingArray) {
-            var yaleBDistance, i = 0,
-                element, numResults = 0;
-            for (i = 0;
-                (i < buildingArray.length) && (numResults <= THRESHOLD); i++) {
-                element = buildingArray[i];
-                // call/calculate true heading
-                bearing = haversineAngle(
-                    // your location
-                    Number(req.body.latitude),
-                    Number(req.body.longitude),
-                    // location of resulting place
-                    Number(element['LATITUDE']),
-                    Number(element['LONGITUDE'])
-                );
-                yaleBDistance = haversineDistance(
-                    // your location
-                    Number(req.body.latitude),
-                    Number(req.body.longitude),
-                    // location of resulting place
-                    Number(element['LATITUDE']),
-                    Number(element['LONGITUDE'])
-                );
-                if (yaleBDistance <= placeRadius) {
-                    element.distance = yaleBDistance;
-                    element.heading = (bearing < 0) ? bearing + 360 : bearing;
-                    element.headingRelative = bearing;
-                    element.name = element['DESCRIPTION'];
-                    element.location = {
-                        lat: Number(element['LATITUDE']),
-                        lng: Number(element['LONGITUDE'])
-                    };
-                    element.address = element['ADDRESS_1'] + ' ' + element['ADDRESS_2'] + ' ' + element['ADDRESS_3'];
-                    existingArray.push(element);
-                    numResults++;
-                }
-            }
-            callback(existingArray);
-        });
-    };
-
 
     /*
      * Recrusive asynchronous callback, which calls the final execution
@@ -192,7 +122,6 @@ router.post('/insight', function(req, res) {
      * Enables dynamic filtering during list population to get true closest   
      * results.
      */
-    // add in yale building data - should currently fail and return original data without API key
     var infoCallback = function(response, i, existingArray, itemCount, callback) {
         if (itemCount === THRESHOLD) {
             return callback(existingArray);
@@ -286,21 +215,13 @@ router.post('/insight', function(req, res) {
     // for every place reference in the response, gather meta-info
     var placeDetails = [];
     if (req.body.query === undefined || req.body.query === 'all') {
-        addYaleBuildings(placeDetails, function(yaleArray) {
-            addGoogleRadarSearch(yaleArray, function(finalArray) {
-                // sort the final array by distance
-                sortByKey(finalArray, 'distance');
-                // splice the array in half, since we have THRESHOLD * 2 total elements
-                // (THRESHOLD) from each
-                var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
-                res.send(splicedArr);
-            });
-        });
-    } else if (req.body.query === 'yale') {
-        addYaleBuildings(placeDetails, function(yaleArray) {
+        addGoogleRadarSearch(placeDetails, function(finalArray) {
             // sort the final array by distance
-            sortByKey(yaleArray, 'distance');
-            res.send(yaleArray);
+            sortByKey(finalArray, 'distance');
+            // splice the array in half, since we have THRESHOLD * 2 total elements
+            // (THRESHOLD) from each
+            var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
+            res.send(splicedArr);
         });
     } else if (req.body.query === 'places') {
         addGoogleRadarSearch(placeDetails, function(placesArray) {
