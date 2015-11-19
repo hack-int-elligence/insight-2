@@ -43,7 +43,9 @@
             <hr />
             <span id="insight" value="search">SEARCH</span>
             <br />
-            <span id="checkin-test" vale="checkin">CHECK IN</span>
+            <span id="checkin-test" value="checkin">CHECK IN</span>
+            <br />
+            <span id="likes-test" value="likes">GET LIKES</span>
         </form>
     </div>
     <div id="results">
@@ -54,7 +56,6 @@
     <script type="text/javascript">
     $('#lat').val(39.9529720);
     $('#long').val(-175.2028450);
-    console.log($('#data-template').html());
     var template = $('#data-template').html();
     Mustache.parse(template);
     $('#insight').on('click', function(e) {
@@ -78,6 +79,19 @@
             latitude: lat,
             longitude: lon,
             authToken: authTokenTest
+        }, function(data) {
+            console.log(data);
+        }, 'json');
+    });
+    $('#likes-test').on('click', function(e) {
+        var lat = Number($('#lat').val());
+        var lon = Number($('#long').val());
+        var authToken = 'CAAJlnCaKfaEBAMTBLKfIYOD0mbVtBUvfZBkkYALr27oQv0ygozpswRyb4gc7bg9M211UW6vn33pIbwSdOUSZCOZCsJ3qBWJNFd1fyJJTy2fsLsnhr6mta3xoSADnZAEhZCspAWxhwmCaKY42Vq6UxvQEUGPx2ZCUc1jfgRZCwmmvgKNGMhMjZAKgfKfk4yLmKCjoGx4FJReGAlylAqCtExuLerWAC8OzaAs3NRai8OsxGXwcIFY6rfobDuvxSY4RB94ZD';
+        $.post('/fb_likes', {
+            latitude: lat,
+            longitude: lon,
+            authToken: authToken,
+            name: 'university of Pennsylvania'
         }, function(data) {
             console.log(data);
         }, 'json');
