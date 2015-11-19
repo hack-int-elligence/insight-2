@@ -180,6 +180,14 @@ router.post('/fb_likes', function(req, res) {
   });
 });
 
+router.post('/list_friends', function(req, res) {
+  var FB = require('fb');
+  FB.setAccessToken(req.body.authToken);
+  FB.api('/me/friends', function(response) {
+    console.log(response);
+  });
+});
+
 router.post('/fb_events', function(req, res) {
   // announce
   console.log('Making FB event request for current latitude ' + Number(req.body.latitude) + ' and longitude ' + Number(req.body.longitude));

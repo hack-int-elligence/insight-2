@@ -1,5 +1,0 @@
-var express = require('express');
-var debug = require('debug')('login');
-var fb = require('fb');
-var moment = require('moment');
-var request = require('request');

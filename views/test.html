@@ -34,7 +34,7 @@
 
 <body id="page-top">
     <div style="margin:auto; text-align: center; padding:25% 0">
-        <h1 style="padding: 15px 0">Insight Test Page (University of Pennsylvania)</h1>
+        <h1 style="padding: 15px 0">Insight Test Page</h1>
         <form>
             Latitude:
             <input id="lat" type="text" name="latitude" placeholder="latitude (39.9529720)"></input>
@@ -45,7 +45,7 @@
             <br />
             <span id="checkin-test" value="checkin">CHECK IN</span>
             <br />
-            <span id="likes-test" value="likes">GET LIKES</span>
+            <span id="fb-test" value="likes">TEST FB DATA</span>
         </form>
     </div>
     <div id="results">
@@ -74,7 +74,7 @@
     $('#checkin-test').on('click', function(e) {
         var lat = Number($('#lat').val());
         var lon = Number($('#long').val());
-        var authTokenTest = 'CAAJlnCaKfaEBAABfkmCvxwRoXc1o9bimsZCJk0RTyFlZCYYD6qvf6XKbZCq5zhGSF6j1s0NjSWxZBmdQIinUxBc7w1GfCgBlzRguaadz6YNiSo0mMyTkpZCKXrZCqPSpb5asnR1R5mIDNE5mZC3Oj7VPaHUibJRkgTSNbSTlWkcpxwCIExee9r8Nq9M51bCq1ZA1D6JqXnh6E0CcSwjpbrDBfTvIXqmTxHsnInwLuZAFzIEGSvqqVVIssPLYVQkyezEcZD';
+        var authTokenTest = 'CAAJlnCaKfaEBAMTBLKfIYOD0mbVtBUvfZBkkYALr27oQv0ygozpswRyb4gc7bg9M211UW6vn33pIbwSdOUSZCOZCsJ3qBWJNFd1fyJJTy2fsLsnhr6mta3xoSADnZAEhZCspAWxhwmCaKY42Vq6UxvQEUGPx2ZCUc1jfgRZCwmmvgKNGMhMjZAKgfKfk4yLmKCjoGx4FJReGAlylAqCtExuLerWAC8OzaAs3NRai8OsxGXwcIFY6rfobDuvxSY4RB94ZD';
         $.post('/fb_checkin', {
             latitude: lat,
             longitude: lon,
@@ -83,15 +83,14 @@
             console.log(data);
         }, 'json');
     });
-    $('#likes-test').on('click', function(e) {
+    $('#fb-test').on('click', function(e) {
         var lat = Number($('#lat').val());
         var lon = Number($('#long').val());
-        var authToken = 'CAAJlnCaKfaEBAMTBLKfIYOD0mbVtBUvfZBkkYALr27oQv0ygozpswRyb4gc7bg9M211UW6vn33pIbwSdOUSZCOZCsJ3qBWJNFd1fyJJTy2fsLsnhr6mta3xoSADnZAEhZCspAWxhwmCaKY42Vq6UxvQEUGPx2ZCUc1jfgRZCwmmvgKNGMhMjZAKgfKfk4yLmKCjoGx4FJReGAlylAqCtExuLerWAC8OzaAs3NRai8OsxGXwcIFY6rfobDuvxSY4RB94ZD';
-        $.post('/fb_likes', {
+        var authToken = 'CAAJlnCaKfaEBAAUFVrleFPT1NOb8iZBVkc1jANZBeDMffTYUMAJVYyWLJrVv9ZBch74FZBxMzZBegUC919zoLNI86EotfuFTED9wtNiAM9miCkXjTBeAtYcMiV3uxiajD5yqa0IzP8LtRuP1HkeNzpcWavWJoHB1qy7G9UG1jMQtWgPvczdQEcIXvneZAB958DarI43p6J75Qej4Jp0fnQAZBZB09rhcdslMjPn1Y7Q5E2g31xLziZBANUrps5nBYcbAsKIT5aVYW7QZDZD';
+        $.post('/list_friends', {
             latitude: lat,
             longitude: lon,
             authToken: authToken,
-            name: 'university of Pennsylvania'
         }, function(data) {
             console.log(data);
         }, 'json');
