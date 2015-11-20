@@ -45,6 +45,7 @@ router.post('/*', function(req, res, next) {
             }, {
               success: function(currentInsightUser) {
                 console.log('Updated lastActive timestamp and last location for ' + facebookUserName);
+                req.facebookUserId = facebookUserId;
                 next();
               },
               error: function(object, err) {
@@ -63,10 +64,12 @@ router.post('/*', function(req, res, next) {
               position: {
                 latitude: req.body.latitude,
                 longitude: req.body.longitude
-              }
+              },
+              checkins: []
             }, {
               success: function(currentInsightUser) {
                 console.log('Created new record and updated lastActive timestamp & last location for ' + facebookUserName);
+                req.facebookUserId = facebookUserId;
                 next();
               },
               error: function(object, err) {

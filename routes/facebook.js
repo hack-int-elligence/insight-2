@@ -3,11 +3,12 @@ var debug = require('debug')('facebook');
 var fb = require('fb');
 var moment = require('moment');
 var request = require('request');
+var Parse = require('parse/node').Parse;
 
 var g_API_key = ['AIzaSyD4C_0grHO3gWxgCLGbndJy_ejDXbKNDXk', ];
 var g_API_key_offset = 0;
 
-var bing_maps_api_key = "AjP-pU7xn-GBz_RLNnVL6oUckIzfj-q90bdJ69_wLtviEa7ZnBf7PHbPicPYPNr7";
+var InsightUserClass = Parse.Object.extend('InsightUser');
 
 var hat = require('hat');
 var request = require('request');
@@ -129,9 +130,37 @@ router.post('/fb_checkin', function(req, res) {
             }
           }, function(checkinResponse) {
             // log out the genereated post ID for reference
+            console.log('Facebook check in succesful.')
             console.log(checkinResponse);
-            // send back data to the phone, just because I have no use for it and we might as well keep it somewhere
-            res.status(200).send(checkinResponse);
+
+            // add check-in data to parse
+            var facebookUserId = req.facebookUserId;
+            var query = new Parse.Query(InsightUserClass);
+            query.equalTo('facebookUserId', req.facebookUserId);
+            query.first({
+              success: function(currentInsightUser) {
+                console.log('Adding in a new check-in location in Parse...');
+                currentInsightUser.add('checkins', {
+                  position: {
+                    latitude: req.body.latitude,
+                    longitude: req.body.longitude
+                  },
+                  name: req.body.name,
+                  facebookPlaceId: place_id
+                });
+                currentInsightUser.save(null, {
+                  success: function(savedUser) {
+                    console.log('Added check-in for user!');
+                    // completed backaend bookkeeping and updated the values
+                    res.status(200).send(checkinResponse);
+                  },
+                  error: function(obj, err) {
+                    console.log('Parse error in uploading check in data.');
+                    console.log(err);
+                  }
+                });
+              }
+            });
           });
         } else {
           // if no page found, send back error
@@ -179,6 +208,10 @@ router.post('/fb_likes', function(req, res) {
     });
   });
 });
+
+var isFacebookFriend = function(person) {
+
+};
 
 router.post('/list_friends', function(req, res) {
   var FB = require('fb');
