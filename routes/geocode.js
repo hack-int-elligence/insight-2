@@ -300,6 +300,7 @@ router.post('/insight', function(req, res) {
                 }
             }
             var returnArr = existingArray.concat(acceptedEvents);
+            console.log('Finished event search with', acceptedEvents.length, 'results!');
             callback(returnArr);
         });
     };
@@ -385,6 +386,7 @@ router.post('/insight', function(req, res) {
                             if (acceptedEvents.length == expected_length) {
                                 // combine the arrays and then return results in the callback
                                 var finalArray = existingArray.concat(acceptedEvents);
+                                console.log('Successfully found', acceptedEvents.length, 'people!');
                                 callback(finalArray);
                             }
 
@@ -410,9 +412,10 @@ router.post('/insight', function(req, res) {
     // for every place reference in the response, gather meta-info
     var placeDetails = [];
 
-    var places_bool = req.body.places === 'true';
-    var events_bool = req.body.events === 'true';
-    var people_bool = req.body.people === 'true';
+    var places_bool = req.body.places === 'true' || req.body.places === true;
+    var events_bool = req.body.events === 'true' || req.body.events === true;
+    var people_bool = req.body.people === 'true' || req.body.events === true;
+    console.log('Places:', places_bool, 'Events:', events_bool, 'People:', people_bool);
 
     if (places_bool === true && events_bool === false && people_bool === false) {
         addGoogleRadarSearch(placeDetails, function(finalArray) {
