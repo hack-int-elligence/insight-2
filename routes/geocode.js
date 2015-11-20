@@ -300,6 +300,7 @@ router.post('/insight', function(req, res) {
                 }
             }
             var returnArr = existingArray.concat(acceptedEvents);
+            console.log('Finished event search with', acceptedEvents.length, 'results!');
             callback(returnArr);
         });
     };
@@ -336,15 +337,40 @@ router.post('/insight', function(req, res) {
                             var checkinTolerance = 7 * 24 * 60 * 60 * 1000;
                             var current_time = new moment().unix();
                             var lastActive = Number(user.get('lastActive'));
-                            if (current_time - lastActive <= tolerance) {
-                                // within tolerance level for timestamps
-                                var userObject = {};
-                                userObject.name = user.get('facebookUserName');
-                                userObject.location = user.get('position');
-                                userObject.type = 'people';
-                                userObject.subtype = 'person';
-                                // push the user's current position to the array
-                                acceptedEvents.push(userObject);
+                            var user_location = user.get('position');
+                            // Make sure distance of checked-in
+                            var user_abs_distance = haversineDistance(
+                                // your location
+                                Number(req.body.latitude),
+                                Number(req.body.longitude),
+                                // location of resulting place
+                                Number(user_location.latitude),
+                                Number(user_location.longitude)
+                            );
+                            if (user_abs_distance <= placeRadius) {
+                                if (current_time - lastActive <= tolerance) {
+                                    // within tolerance level for timestamps
+                                    var userObject = {};
+                                    userObject.name = user.get('facebookUserName');
+                                    userObject.location = user_location;
+                                    userObject.type = 'people';
+                                    userObject.subtype = 'person';
+
+                                    var userBearing = haversineAngle(
+                                        // your location
+                                        Number(req.body.latitude),
+                                        Number(req.body.longitude),
+                                        // location of resulting place
+                                        Number(user_location.latitude),
+                                        Number(user_location.longitude)
+                                    );
+                                    userObject.headingRelative = userBearing;
+                                    userObject.heading = (userBearing < 0) ? userBearing + 360 : userBearing;
+                                    userObject.distance = user_abs_distance;
+
+                                    // push the user's current position to the array
+                                    acceptedEvents.push(userObject);
+                                }
                             }
 
                             // 2 - only accept check in objects that have appropriate position object and timestamp
@@ -352,7 +378,7 @@ router.post('/insight', function(req, res) {
                             for (var i = 0; i < checkins.length; i++) {
                                 var checkinInstance = checkins[i];
                                 // Make sure distance of checked-in
-                                var abs_distance = haversineDistance(
+                                var checkinObjAbsDistance = haversineDistance(
                                     // your location
                                     Number(req.body.latitude),
                                     Number(req.body.longitude),
@@ -360,7 +386,7 @@ router.post('/insight', function(req, res) {
                                     Number(checkinInstance.position.latitude),
                                     Number(checkinInstance.position.longitude)
                                 );
-                                if (abs_distance <= placeRadius) {
+                                if (checkinObjAbsDistance <= placeRadius) {
                                     if (current_time - Number(checkinInstance.timestamp) <= checkinTolerance) {
                                         // accept object - format and add
                                         var checkinPlaceObj = {
@@ -373,6 +399,18 @@ router.post('/insight', function(req, res) {
                                             type: 'people',
                                             subtype: 'checkin'
                                         };
+                                        var checkinInstanceBearing = haversineAngle(
+                                            // your location
+                                            Number(req.body.latitude),
+                                            Number(req.body.longitude),
+                                            // location of resulting place
+                                            Number(checkinInstance.position.latitude),
+                                            Number(checkinInstance.position.longitude)
+                                        );
+                                        checkinPlaceObj.headingRelative = checkinInstanceBearing;
+                                        checkinPlaceObj.heading = (checkinInstanceBearing < 0) ? checkinInstanceBearing + 360 : checkinInstanceBearing;
+                                        checkinPlaceObj.distance = checkinObjAbsDistance;
+
                                         acceptedEvents.push(checkinPlaceObj);
                                         // increase the expeted count for each checked in object, so that the loop ends
                                         expected_length++;
@@ -385,6 +423,7 @@ router.post('/insight', function(req, res) {
                             if (acceptedEvents.length == expected_length) {
                                 // combine the arrays and then return results in the callback
                                 var finalArray = existingArray.concat(acceptedEvents);
+                                console.log('Successfully found', acceptedEvents.length, 'people!');
                                 callback(finalArray);
                             }
 
@@ -410,9 +449,10 @@ router.post('/insight', function(req, res) {
     // for every place reference in the response, gather meta-info
     var placeDetails = [];
 
-    var places_bool = req.body.places === 'true';
-    var events_bool = req.body.events === 'true';
-    var people_bool = req.body.people === 'true';
+    var places_bool = req.body.places === 'true' || req.body.places === true;
+    var events_bool = req.body.events === 'true' || req.body.events === true;
+    var people_bool = req.body.people === 'true' || req.body.events === true;
+    console.log('Places:', places_bool, 'Events:', events_bool, 'People:', people_bool);
 
     if (places_bool === true && events_bool === false && people_bool === false) {
         addGoogleRadarSearch(placeDetails, function(finalArray) {
