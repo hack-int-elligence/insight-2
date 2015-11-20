@@ -117,6 +117,7 @@ var invertHeadingsFromArray = function(array) {
  *
  */
 var processRelativeValues = function(array) {
+    if (array.length === 0) { return array; };
     console.log('Adding quartiles...');
     // Process relative heights
     var smallestDistance = Number(array[0].distance);
