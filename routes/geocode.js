@@ -329,7 +329,7 @@ router.post('/insight', function(req, res) {
                                                 new_place_element.yelp_review = business_data['reviews'][0];
                                                 existingArray.push(new_place_element);
                                                 if (existingArray.length == expected_length) {
-                                                    callback(existingArray);    
+                                                    callback(existingArray);
                                                 }
                                             });
                                         } else {
@@ -356,6 +356,61 @@ router.post('/insight', function(req, res) {
         });
     };
 
+    var addFacebookEvents = function(existingArray, callback) {
+        console.log('Making FB event search request for current latitude ' + Number(req.body.latitude) + ' and longitude ' + Number(req.body.longitude));
+        // parse radius
+        var radius = req.body.radius || '500';
+
+        var FB = require('fb');
+        FB.setAccessToken(req.body.authToken);
+        FB.api('me/events', function(events) {
+            if (!events || events.error) {
+                console.log(!events ? 'error occurred' : events.error);
+                res.send(events.error);
+            }
+            var acceptedEvents = [];
+            for (var i = 0; i < events.data.length; i++) {
+                var event = events.data[i];
+                if (event.place.location && event.place.location.latitude && event.place.location.longitude) {
+                    // check to see it has geocodable data & build epoch stamp
+                    var event_time = moment(event.start_time);
+                    // should be >= current time on the same day
+                    if (event_time.isAfter() || event_time.isSame(new Date(), 'day')) {
+                        var bearing = haversineAngle(
+                            // your location
+                            Number(req.body.latitude),
+                            Number(req.body.longitude),
+                            // location of resulting place
+                            event.place.location.latitude,
+                            event.place.location.longitude
+                        );
+                        event.heading = (bearing < 0) ? bearing + 360 : bearing;
+                        event.headingRelative = bearing;
+                        event.distance = haversineDistance(
+                            // your location
+                            Number(req.body.latitude),
+                            Number(req.body.longitude),
+                            // location of resulting place
+                            event.place.location.latitude,
+                            event.place.location.longitude
+                        );
+                        // make sure the event is in radius
+                        if (event.distance <= Number(radius)) {
+                            acceptedEvents.push(event);
+                        }
+                    }
+                }
+            }
+            // // process events before sending
+            // var responseObj = acceptedEvents;
+            // // responseObj = invertHeadingsFromArray(acceptedEvents);
+            // // Sort by distance
+            // responseObj = sortByKey(responseObj, 'distance');
+            // res.send(responseObj);
+            callback(acceptedEvents);
+        });
+    };
+
     /* 
      * MASTER REQUEST HANDLER
      *
@@ -363,22 +418,22 @@ router.post('/insight', function(req, res) {
      */
     // for every place reference in the response, gather meta-info
     var placeDetails = [];
-    if (req.body.query === undefined || req.body.query === 'all') {
-        addGoogleRadarSearch(placeDetails, function(finalArray) {
-            // sort the final array by distance
-            sortByKey(finalArray, 'distance');
-            // splice the array in half, since we have THRESHOLD * 2 total elements
-            // (THRESHOLD) from each
-            var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
-            res.send(splicedArr);
-        });
-    } else if (req.body.query === 'places') {
-        addGoogleRadarSearch(placeDetails, function(placesArray) {
-            // sort the final array by distance
-            sortByKey(placesArray, 'distance');
-            res.send(placesArray);
-        });
-    }
+    // if (req.body.query === undefined || req.body.query === 'all') {
+    //     addGoogleRadarSearch(placeDetails, function(finalArray) {
+    //         // sort the final array by distance
+    //         sortByKey(finalArray, 'distance');
+    //         // splice the array in half, since we have THRESHOLD * 2 total elements
+    //         // (THRESHOLD) from each
+    //         var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
+    //         res.send(splicedArr);
+    //     });
+    // } else if (req.body.query === 'places') {
+    //     addGoogleRadarSearch(placeDetails, function(placesArray) {
+    //         // sort the final array by distance
+    //         sortByKey(placesArray, 'distance');
+    //         res.send(placesArray);
+    //     });
+    // }
 });
 
 router.post('/directions', function(req, res) {
