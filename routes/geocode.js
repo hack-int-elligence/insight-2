@@ -337,15 +337,39 @@ router.post('/insight', function(req, res) {
                             var checkinTolerance = 7 * 24 * 60 * 60 * 1000;
                             var current_time = new moment().unix();
                             var lastActive = Number(user.get('lastActive'));
-                            if (current_time - lastActive <= tolerance) {
-                                // within tolerance level for timestamps
-                                var userObject = {};
-                                userObject.name = user.get('facebookUserName');
-                                userObject.location = user.get('position');
-                                userObject.type = 'people';
-                                userObject.subtype = 'person';
-                                // push the user's current position to the array
-                                acceptedEvents.push(userObject);
+                            var user_location = user.get('position');
+                            // Make sure distance of checked-in
+                            var user_abs_distance = haversineDistance(
+                                // your location
+                                Number(req.body.latitude),
+                                Number(req.body.longitude),
+                                // location of resulting place
+                                Number(user_location.latitude),
+                                Number(user_location.longitude)
+                            );
+                            if (user_abs_distance <= placeRadius) {
+                                if (current_time - lastActive <= tolerance) {
+                                    // within tolerance level for timestamps
+                                    var userObject = {};
+                                    userObject.name = user.get('facebookUserName');
+                                    userObject.location = user_location;
+                                    userObject.type = 'people';
+                                    userObject.subtype = 'person';
+
+                                    var userBearing = haversineAngle(
+                                        // your location
+                                        Number(req.body.latitude),
+                                        Number(req.body.longitude),
+                                        // location of resulting place
+                                        Number(user_location.latitude),
+                                        Number(user_location.longitude)
+                                    );
+                                    userObject.headingRelative = userBearing;
+                                    userObject.heading = (userBearing < 0) ? userBearing + 360 : userBearing;
+
+                                    // push the user's current position to the array
+                                    acceptedEvents.push(userObject);
+                                }
                             }
 
                             // 2 - only accept check in objects that have appropriate position object and timestamp
@@ -374,6 +398,17 @@ router.post('/insight', function(req, res) {
                                             type: 'people',
                                             subtype: 'checkin'
                                         };
+                                        var checkinInstanceBearing = haversineAngle(
+                                            // your location
+                                            Number(req.body.latitude),
+                                            Number(req.body.longitude),
+                                            // location of resulting place
+                                            Number(checkinInstance.position.latitude),
+                                            Number(checkinInstance.position.longitude)
+                                        );
+                                        checkinPlaceObj.headingRelative = checkinInstanceBearing;
+                                        checkinPlaceObj.heading = (checkinInstanceBearing < 0) ? checkinInstanceBearing + 360 : checkinInstanceBearing;
+
                                         acceptedEvents.push(checkinPlaceObj);
                                         // increase the expeted count for each checked in object, so that the loop ends
                                         expected_length++;
