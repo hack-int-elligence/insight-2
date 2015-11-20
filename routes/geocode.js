@@ -27,7 +27,7 @@ var yelp = new Yelp({
 });
 
 // Number of results returned from Google Places
-var THRESHOLD = 10;
+var THRESHOLD_SERVER_DEFAULT = 10;
 
 /*
  * Haversine calculation utilities
@@ -115,6 +115,7 @@ router.get('/test', function (req, res) {
 });
 
 router.post('/insight', function(req, res) {
+    var THRESHOLD = req.body.threshold || THRESHOLD_SERVER_DEFAULT;
     // require the google places module inside the route handler to change the config key
     var googleplaces = require('googleplaces')(g_API_key[g_API_key_offset], 'json');
     // announce
