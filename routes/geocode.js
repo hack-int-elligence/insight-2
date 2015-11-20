@@ -352,8 +352,6 @@ router.post('/insight', function(req, res) {
 
                             // 2 - only accept check in objects that have appropriate position object and timestamp
                             var checkins = user.get('checkins');
-                            console.log(checkins);
-                            console.log(acceptedEvents);
                             for (var i = 0; i < checkins.length; i++) {
                                 var checkinInstance = checkins[i];
                                 // Make sure distance of checked-in
@@ -374,7 +372,7 @@ router.post('/insight', function(req, res) {
                                                 latitude: checkinInstance.position.latitude,
                                                 longitude: checkinInstance.position.longitude
                                             },
-                                            place_id: facebookPlaceId,
+                                            place_id: user.get('facebookPlaceId'),
                                             type: 'people',
                                             subtype: 'checkin'
                                         };
