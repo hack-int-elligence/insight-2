@@ -138,6 +138,9 @@ router.post('/insight', function(req, res) {
         if (itemCount === THRESHOLD) {
             return callback(existingArray);
         }
+        if (response.results.length === 0) {
+            return callback(existingArray);
+        }
         // using the reference field, make individual PlaceDetails requests via the Places API
         googleplaces.placeDetailsRequest({
             reference: response.results[i].reference
@@ -172,18 +175,20 @@ router.post('/insight', function(req, res) {
                     address: details.result.formatted_address,
                     website: details.result.website,
                     rating: details.result.rating,
-                    reviews: details.result.reviews,
                     tags: details.result.types,
                     heading: (bearing < 0) ? bearing + 360 : bearing,
                     headingRelative: bearing,
                     distance: abs_distance
                 };
+                var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
                 yelp.search({
                     term: 'food',
-                    ll: toString(details.result.geometry.location.lat) + ',' + toString(details.result.geometry.location.lat),
-                    radius_filter: 10
+                    ll: latitude_parameter,
+                    sort: 1,
+                    limit: 2
                 }).then(function(data) {
-                    if (data.length > 0) {
+                    if (data.businesses.length > 0) {
+
                         var business = data['businesses'][0];
                         new_place_element['yelp_name'] = business['name'];
                         new_place_element['yelp_rating'] = business['rating'];
@@ -201,6 +206,14 @@ router.post('/insight', function(req, res) {
                                 return existingArray;
                             }
                         });
+                    } else {
+                        existingArray.push(new_place_element);
+                        if (existingArray.length < (THRESHOLD * 2)) {
+                            var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
+                            return returnVal;
+                        } else {
+                            return existingArray;
+                        }
                     }
                 });
             } else {
