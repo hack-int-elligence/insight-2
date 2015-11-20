@@ -54,6 +54,8 @@
         </template>
     </div>
     <script type="text/javascript">
+    var Krishna = 'CAAJlnCaKfaEBAMTBLKfIYOD0mbVtBUvfZBkkYALr27oQv0ygozpswRyb4gc7bg9M211UW6vn33pIbwSdOUSZCOZCsJ3qBWJNFd1fyJJTy2fsLsnhr6mta3xoSADnZAEhZCspAWxhwmCaKY42Vq6UxvQEUGPx2ZCUc1jfgRZCwmmvgKNGMhMjZAKgfKfk4yLmKCjoGx4FJReGAlylAqCtExuLerWAC8OzaAs3NRai8OsxGXwcIFY6rfobDuvxSY4RB94ZD';
+    var Jacob = 'CAAJlnCaKfaEBAAUFVrleFPT1NOb8iZBVkc1jANZBeDMffTYUMAJVYyWLJrVv9ZBch74FZBxMzZBegUC919zoLNI86EotfuFTED9wtNiAM9miCkXjTBeAtYcMiV3uxiajD5yqa0IzP8LtRuP1HkeNzpcWavWJoHB1qy7G9UG1jMQtWgPvczdQEcIXvneZAB958DarI43p6J75Qej4Jp0fnQAZBZB09rhcdslMjPn1Y7Q5E2g31xLziZBANUrps5nBYcbAsKIT5aVYW7QZDZD';
     $('#lat').val(39.9529720);
     $('#long').val(-175.2028450);
     var template = $('#data-template').html();
@@ -74,11 +76,12 @@
     $('#checkin-test').on('click', function(e) {
         var lat = Number($('#lat').val());
         var lon = Number($('#long').val());
-        var authTokenTest = 'CAAJlnCaKfaEBAMTBLKfIYOD0mbVtBUvfZBkkYALr27oQv0ygozpswRyb4gc7bg9M211UW6vn33pIbwSdOUSZCOZCsJ3qBWJNFd1fyJJTy2fsLsnhr6mta3xoSADnZAEhZCspAWxhwmCaKY42Vq6UxvQEUGPx2ZCUc1jfgRZCwmmvgKNGMhMjZAKgfKfk4yLmKCjoGx4FJReGAlylAqCtExuLerWAC8OzaAs3NRai8OsxGXwcIFY6rfobDuvxSY4RB94ZD';
+        var authTokenTest = Jacob;
         $.post('/fb_checkin', {
             latitude: lat,
             longitude: lon,
-            authToken: authTokenTest
+            authToken: authTokenTest,
+            name: 'Facebook HQ'
         }, function(data) {
             console.log(data);
         }, 'json');
@@ -86,12 +89,11 @@
     $('#fb-test').on('click', function(e) {
         var lat = Number($('#lat').val());
         var lon = Number($('#long').val());
-        var authToken = 'CAAJlnCaKfaEBAAUFVrleFPT1NOb8iZBVkc1jANZBeDMffTYUMAJVYyWLJrVv9ZBch74FZBxMzZBegUC919zoLNI86EotfuFTED9wtNiAM9miCkXjTBeAtYcMiV3uxiajD5yqa0IzP8LtRuP1HkeNzpcWavWJoHB1qy7G9UG1jMQtWgPvczdQEcIXvneZAB958DarI43p6J75Qej4Jp0fnQAZBZB09rhcdslMjPn1Y7Q5E2g31xLziZBANUrps5nBYcbAsKIT5aVYW7QZDZD';
+        var authToken = Jacob;
         $.post('/list_friends', {
             latitude: lat,
             longitude: lon,
-            authToken: authToken,
-            name: 'university of Pennsylvania'
+            authToken: authToken
         }, function(data) {
             console.log(data);
         }, 'json');
