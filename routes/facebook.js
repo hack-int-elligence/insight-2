@@ -226,7 +226,7 @@ router.post('/fb_checkin', function(req, res) {
                     name: req.body.name,
                     facebookPlaceId: place_id,
                     timestamp: new moment().unix()
-                  })
+                  });
                 }
                 currentInsightUser.set('checkins', new_checkins);
                 currentInsightUser.save(null, {
@@ -237,7 +237,7 @@ router.post('/fb_checkin', function(req, res) {
                       success: function(checkinObject) {
                         if (checkinObject) {
                           // object exists => add user to object
-                          checkinObject.addUnique('people', savedUser);
+                          checkinObject.addUnique('people', place_id);
                           checkinObject.save(null, {
                             success: function(savedCheckin) {
                               console.log('Added check-in for user!');
@@ -259,7 +259,7 @@ router.post('/fb_checkin', function(req, res) {
                               longitude: req.body.longitude
                             },
                             name: req.body.name,
-                            people: [savedUser]
+                            people: [place_id]
                           }, {
                             success: function(savedCheckin) {
                               console.log('Added check-in for user!');
