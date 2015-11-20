@@ -121,7 +121,7 @@ var processRelativeValues = function(array) {
     // Process relative heights
     var smallestDistance = Number(array[0].distance);
     var largestDistance = Number(array[array.length - 1].distance);
-    
+
     // normalize values to prevent log(0)
     smallestDistance = (smallestDistance === 0) ? 0.0001 : smallestDistance;
     largestDistance = (largestDistance === 0) ? 0.0001 : largestDistance;
@@ -477,7 +477,7 @@ router.post('/insight', function(req, res) {
                                         checkinPlaceObj.distance = checkinObjAbsDistance;
 
                                         console.log('accepted a user checkin');
-                                        console.log(checkinPlaceObj);
+                                        console
                                         acceptedEvents.push(checkinPlaceObj);
                                         // increase the expeted count for each checked in object, so that the loop ends
                                         expected_length++;
@@ -497,6 +497,12 @@ router.post('/insight', function(req, res) {
                         } else {
                             // ignore, this is a friend who hasn't used the app ever
                             expected_length--;
+                            if (acceptedEvents.length == expected_length) {
+                                // combine the arrays and then return results in the callback
+                                var finalArray = existingArray.concat(acceptedEvents);
+                                console.log('Successfully found', acceptedEvents.length, 'people!');
+                                callback(finalArray);
+                            }
                         }
                     },
                     error: function(err) {
