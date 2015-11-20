@@ -182,22 +182,36 @@ router.post('/insight', function(req, res) {
                 };
                 var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
                 yelp.search({
-                    term: 'food',
+                    term: details.result.name,
                     ll: latitude_parameter,
                     sort: 1,
-                    limit: 2
+                    limit: 1,
+                    radius_filter: 50
                 }).then(function(data) {
                     if (data.businesses.length > 0) {
+                        var yelp_distance_to_result = haversineDistance(details.result.geometry.location.lat,
+                            details.result.geometry.location.lng, data.businesses[0].location.coordinate.latitude,
+                            data.businesses[0].location.coordinate.longitude);
 
-                        var business = data['businesses'][0];
-                        new_place_element['yelp_name'] = business['name'];
-                        new_place_element['yelp_rating'] = business['rating'];
-                        new_place_element['is_closed'] = business['is_closed'];
-                        new_place_element['yelp_review_link'] = business['mobile_url'];
+                        if (yelp_distance_to_result < 100) {
+                            var business = data.businesses[0];
 
-                        yelp.business(business['id']).then(function(data) {
-                            new_place_element['yelp_review'] = data['reviews'][0];
+                            new_place_element.yelp_name = business['name'];
+                            new_place_element.yelp_rating = business['rating'];
+                            new_place_element.is_closed = business['is_closed'];
+                            new_place_element.yelp_review_link = business['mobile_url'];
 
+                            yelp.business(business['id']).then(function(business_data) {
+                                new_place_element.yelp_review = business_data['reviews'][0];
+                                existingArray.push(new_place_element);
+                                if (existingArray.length < (THRESHOLD * 2)) {
+                                    var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
+                                    return returnVal;
+                                } else {
+                                    return existingArray;
+                                }
+                            });
+                        } else {
                             existingArray.push(new_place_element);
                             if (existingArray.length < (THRESHOLD * 2)) {
                                 var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
@@ -205,7 +219,7 @@ router.post('/insight', function(req, res) {
                             } else {
                                 return existingArray;
                             }
-                        });
+                        }
                     } else {
                         existingArray.push(new_place_element);
                         if (existingArray.length < (THRESHOLD * 2)) {
