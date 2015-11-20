@@ -26,8 +26,11 @@ var yelp = new Yelp({
     token_secret: _YELP_TOKEN_SECRET,
 });
 
+
 // Number of results returned from Google Places
+var RADIUS_SERVER_DEFAULT = '2000';
 var THRESHOLD_SERVER_DEFAULT = 10;
+
 
 /*
  * Haversine calculation utilities
@@ -110,7 +113,7 @@ router.get('/', function(req, res) {
     res.render('index');
 });
 
-router.get('/test', function (req, res) {
+router.get('/test', function(req, res) {
     res.render('test');
 });
 
@@ -122,7 +125,7 @@ router.post('/insight', function(req, res) {
     console.log('Making request for latitude ' + Number(req.body.latitude) + ' and longitude ' + Number(req.body.longitude));
 
     // set radius
-    var placeRadius = Number(req.body.radius || '500');
+    var placeRadius = Number(req.body.radius || RADIUS_SERVER_DEFAULT);
 
     /*
      * Recrusive asynchronous callback, which calls the final execution
@@ -161,7 +164,7 @@ router.post('/insight', function(req, res) {
                 // resultCount = resultCount + 1;
                 // console.log(resultCount);
                 // push only relevent API response information
-                existingArray.push({
+                var new_place_element = {
                     name: details.result.name,
                     location: details.result.geometry.location,
                     icon: details.result.icon,
@@ -174,13 +177,32 @@ router.post('/insight', function(req, res) {
                     heading: (bearing < 0) ? bearing + 360 : bearing,
                     headingRelative: bearing,
                     distance: abs_distance
-                });
-                if (existingArray.length < (THRESHOLD * 2)) {
-                    var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
-                    return returnVal;
-                } else {
-                    return existingArray;
                 }
+                yelp.search({
+                    term: 'food',
+                    ll: toString(details.result.geometry.location.lat) + ',' + toString(details.result.geometry.location.lat),
+                    radius_filter: 10
+                }).then(function(data) {
+                    if (data.length > 0) {
+                        var business = data['businesses'][0];
+                        new_place_element['yelp_name'] = business['name'];
+                        new_place_element['yelp_rating'] = business['rating'];
+                        new_place_element['is_closed'] = business['is_closed'];
+                        new_place_element['yelp_review_link'] = business['mobile_url'];
+
+                        yelp.business(business['id']).then(function(data) {
+                            new_place_element['yelp_review'] = data['reviews'][0];
+
+                            existingArray.push(new_place_element);
+                            if (existingArray.length < (THRESHOLD * 2)) {
+                                var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
+                                return returnVal;
+                            } else {
+                                return existingArray;
+                            }
+                        });
+                    }
+                });
             } else {
                 var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
                 return returnVal;
