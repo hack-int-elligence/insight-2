@@ -380,10 +380,13 @@ router.post('/insight', function(req, res) {
 
             // expects each of the users to be present
             var expected_length = friends.length;
+            console.log('friends:')
+            console.log(friends);
 
             for (var i = 0; i < friends.length; i++) {
                 var facebookFriendId = friends[i].id;
                 var query = new Parse.Query(InsightUserClass);
+                console.log('facebookUserId: ' + facebookFriendId);
                 query.equalTo('facebookUserId', facebookFriendId);
                 query.first({
                     success: function(user) {
@@ -429,6 +432,8 @@ router.post('/insight', function(req, res) {
                                     userObject.distance = user_abs_distance;
 
                                     // push the user's current position to the array
+                                    console.log('ACCEPTED A USER');
+                                    console.log(userObject);
                                     acceptedEvents.push(userObject);
                                 }
                             }
@@ -471,6 +476,8 @@ router.post('/insight', function(req, res) {
                                         checkinPlaceObj.heading = (checkinInstanceBearing < 0) ? checkinInstanceBearing + 360 : checkinInstanceBearing;
                                         checkinPlaceObj.distance = checkinObjAbsDistance;
 
+                                        console.log('accepted a user checkin');
+                                        console.log(checkinPlaceObj);
                                         acceptedEvents.push(checkinPlaceObj);
                                         // increase the expeted count for each checked in object, so that the loop ends
                                         expected_length++;
