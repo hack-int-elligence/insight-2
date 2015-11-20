@@ -77,12 +77,12 @@
     $('#checkin-test').on('click', function(e) {
         var lat = Number($('#lat').val());
         var lon = Number($('#long').val());
-        var authTokenTest = Jacob;
+        var authTokenTest = Krishna;
         $.post('/fb_checkin', {
-            latitude: 37.479874 || lat,
-            longitude: -122.152122 || lon,
+            latitude: 40.7305371 || 37.4629101,
+            longitude: -73.9920386 || -122.2449094,
             authToken: authTokenTest,
-            name: 'Mi Tacqueria'
+            name: 'Starbucks'
         }, function(data) {
             console.log(data);
         }, 'json');

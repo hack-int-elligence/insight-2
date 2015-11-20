@@ -379,7 +379,7 @@ router.post('/insight', function(req, res) {
                     // check to see it has geocodable data & build epoch stamp
                     var event_time = moment(event.start_time);
                     // should be >= current time on the same day
-                    if (event_time.isAfter() || event_time.isSame(new Date(), 'day')) {
+                    if (event_time.isAfter(moment()) || event_time.isSame(new Date(), 'day')) {
                         var bearing = haversineAngle(
                             // your location
                             Number(req.body.latitude),
