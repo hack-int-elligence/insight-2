@@ -137,20 +137,45 @@ router.post('/fb_checkin', function(req, res) {
 
             // add check-in data to parse
             var facebookUserId = req.facebookUserId;
+
             var query = new Parse.Query(InsightUserClass);
             query.equalTo('facebookUserId', req.facebookUserId);
             query.first({
               success: function(currentInsightUser) {
                 console.log('Adding in a new check-in location in Parse...');
-                currentInsightUser.add('checkins', {
-                  position: {
-                    latitude: req.body.latitude,
-                    longitude: req.body.longitude
-                  },
-                  name: req.body.name,
-                  facebookPlaceId: place_id,
-                  timestamp: new moment().unix()
-                });
+                var checkins = currentInsightUser.get('checkins');
+                var new_checkins = [];
+                for (var i = 0; i < checkins.length; i++) {
+                  var contains_place = false;
+                  if (checkins[i].facebookPlaceId == place_id) {
+                    // replace checkins to same location
+                    new_checkins.push({
+                      position: {
+                        latitude: req.body.latitude,
+                        longitude: req.body.longitude
+                      },
+                      name: req.body.name,
+                      facebookPlaceId: place_id,
+                      timestamp: new moment().unix()
+                    });
+                    contains_place = true;
+                  } else {
+                    // keep older checkins
+                    new_checkins.push(checkins[i]);
+                  }
+                }
+                if (!contains_place) {
+                  new_checkins.push({
+                    position: {
+                      latitude: req.body.latitude,
+                      longitude: req.body.longitude
+                    },
+                    name: req.body.name,
+                    facebookPlaceId: place_id,
+                    timestamp: new moment().unix()
+                  })
+                }
+                currentInsightUser.set('checkins', new_checkins);
                 currentInsightUser.save(null, {
                   success: function(savedUser) {
                     console.log('Added check-in for user!');
@@ -211,10 +236,6 @@ router.post('/fb_likes', function(req, res) {
     });
   });
 });
-
-var isFacebookFriend = function(person) {
-
-};
 
 router.post('/list_friends', function(req, res) {
   var FB = require('fb');
