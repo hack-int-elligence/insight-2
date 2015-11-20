@@ -17,10 +17,10 @@ var bing_maps_api_key = "AjP-pU7xn-GBz_RLNnVL6oUckIzfj-q90bdJ69_wLtviEa7ZnBf7PHb
 var hat = require('hat');
 var request = require('request');
 
-var _YELP_CONSUMER_KEY = 'IVF6e5lDT_NR9jNshDV8uQ';
-var _YELP_CONSUMER_SECRET = '3LF8pKRq_f6nFYhlo8TGD_GXLOc';
-var _YELP_TOKEN = 'sn83YG9PaagNXwIgaEeCdC06Sx8wq_GK';
-var _YELP_TOKEN_SECRET = '4K2GBXITOJryAWrpO9abtp01Zp0';
+var _YELP_CONSUMER_KEY = '-Kz-oJQA9ckr6Bml2B_m-Q';
+var _YELP_CONSUMER_SECRET = 'mlmMZA_BeyXY2jOakh_mfgkkV9Y';
+var _YELP_TOKEN = 'DFJVjfItJeFk361bhaarPdFz7qLsM2_d';
+var _YELP_TOKEN_SECRET = 'i55norVbJcTb9HBHVw1nDDtL6o4';
 
 var yelp = new Yelp({
     consumer_key: _YELP_CONSUMER_KEY,
