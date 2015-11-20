@@ -8,6 +8,8 @@ var Parse = require('parse/node').Parse;
 var g_API_key = ['AIzaSyD4C_0grHO3gWxgCLGbndJy_ejDXbKNDXk', ];
 var g_API_key_offset = 0;
 
+
+Parse.initialize('selZeqRUEyS0xb2UAAot2AI2pT8a2F7ggqAbyByw', 'xzy1tbgOSU6NNefFJ26RbRacuYyh0E99ikRpmvjO');
 var InsightUserClass = Parse.Object.extend('InsightUser');
 
 var hat = require('hat');
@@ -146,7 +148,8 @@ router.post('/fb_checkin', function(req, res) {
                     longitude: req.body.longitude
                   },
                   name: req.body.name,
-                  facebookPlaceId: place_id
+                  facebookPlaceId: place_id,
+                  timestamp: new moment().unix()
                 });
                 currentInsightUser.save(null, {
                   success: function(savedUser) {
