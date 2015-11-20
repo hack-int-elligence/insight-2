@@ -66,8 +66,8 @@
          var lon = Number($('#long').val());
          $('#results').empty();
          $.post('/insight', {
-            latitude: lat,
-            longitude: lon
+            latitude: 37.485802 || lat,
+            longitude: -122.147011 || lon
         }, function(data) {
             for (var i = 0; i < data.length; i++) {
                 $('#results').append($(Mustache.render(template, data[i])));

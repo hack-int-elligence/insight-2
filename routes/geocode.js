@@ -258,9 +258,100 @@ router.post('/insight', function(req, res) {
                  * Parse API call results, if valid, process/send response
                  */
                 var bearing, abs_distance, resultCount = 0;
-                // only gather info for the first <THRESHOLD> references
-                // use recursive helper, with given callback
-                infoCallback(response, 0, existingArray, 0, callback);
+
+                var starting_length = existingArray.length;
+                var expected_length = starting_length + response.results.length;
+
+                if (response.results.length == 0) {
+                    callback(existingArray);
+                } else {
+                    for (var i = 0; i < response.results.length; i++) {
+                        googleplaces.placeDetailsRequest({
+                            reference: response.results[i].reference
+                        }, function(detailsErr, details) {
+                            // call/calculate true heading
+                            bearing = haversineAngle(
+                                // your location
+                                Number(req.body.latitude),
+                                Number(req.body.longitude),
+                                // location of resulting place
+                                details.result.geometry.location.lat,
+                                details.result.geometry.location.lng
+                            );
+                            abs_distance = haversineDistance(
+                                // your location
+                                Number(req.body.latitude),
+                                Number(req.body.longitude),
+                                // location of resulting place
+                                details.result.geometry.location.lat,
+                                details.result.geometry.location.lng
+                            );
+                            // must have lat/long geometry for insight
+                            if (details.result.geometry && abs_distance <= placeRadius) {
+                                // resultCount = resultCount + 1;
+                                // console.log(resultCount);
+                                // push only relevent API response information
+                                var new_place_element = {
+                                    name: details.result.name,
+                                    location: details.result.geometry.location,
+                                    icon: details.result.icon,
+                                    place_id: details.result.place_id,
+                                    address: details.result.formatted_address,
+                                    website: details.result.website,
+                                    rating: details.result.rating,
+                                    tags: details.result.types,
+                                    heading: (bearing < 0) ? bearing + 360 : bearing,
+                                    headingRelative: bearing,
+                                    distance: abs_distance
+                                };
+                                var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
+                                yelp.search({
+                                    term: details.result.name,
+                                    ll: latitude_parameter,
+                                    sort: 1,
+                                    limit: 1,
+                                    radius_filter: 50
+                                }).then(function(data) {
+                                    if (data.businesses.length > 0) {
+                                        var yelp_distance_to_result = haversineDistance(details.result.geometry.location.lat,
+                                            details.result.geometry.location.lng, data.businesses[0].location.coordinate.latitude,
+                                            data.businesses[0].location.coordinate.longitude);
+
+                                        if (yelp_distance_to_result < 100) {
+                                            var business = data.businesses[0];
+
+                                            new_place_element.yelp_name = business['name'];
+                                            new_place_element.yelp_rating = business['rating'];
+                                            new_place_element.is_closed = business['is_closed'];
+                                            new_place_element.yelp_review_link = business['mobile_url'];
+
+                                            yelp.business(business['id']).then(function(business_data) {
+                                                new_place_element.yelp_review = business_data['reviews'][0];
+                                                existingArray.push(new_place_element);
+                                                if (existingArray.length == expected_length) {
+                                                    callback(existingArray);    
+                                                }
+                                            });
+                                        } else {
+                                            existingArray.push(new_place_element);
+                                            if (existingArray.length == expected_length) {
+                                                callback(existingArray);
+                                            }
+                                        }
+                                    } else {
+                                        existingArray.push(new_place_element);
+                                        if (existingArray.length == expected_length) {
+                                            callback(existingArray);
+                                        }
+                                    }
+                                });
+                            } else {
+                                var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
+                                return returnVal;
+                            }
+                        });
+                    }
+                }
             }
         });
     };
