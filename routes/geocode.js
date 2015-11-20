@@ -466,7 +466,7 @@ router.post('/insight', function(req, res) {
                             // checkins -> three keys: facebook place id, name, and position and timestamp
 
                             // 1 - check to see whether the user's lastActive timestamp was within X seconds
-                            var tolerance = 5 * 60;
+                            var tolerance = 60 * 5 * 60;
                             var checkinTolerance = 7 * 24 * 60 * 60;
                             var current_time = new moment().unix();
                             var lastActive = Number(user.get('lastActive'));
