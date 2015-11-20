@@ -215,10 +215,8 @@ router.post('/insight', function(req, res) {
                                         var yelp_distance_to_result = haversineDistance(details.result.geometry.location.lat,
                                             details.result.geometry.location.lng, data.businesses[0].location.coordinate.latitude,
                                             data.businesses[0].location.coordinate.longitude);
-
-                                        if (yelp_distance_to_result < 100) {
+                                        if (yelp_distance_to_result < 100 && details.result.name.indexOf(data.businesses[0].name.split(' ')[0]) > -1) {
                                             var business = data.businesses[0];
-
 
                                             new_place_element.yelp.name = business['name'];
                                             new_place_element.yelp.rating = business['rating'];
