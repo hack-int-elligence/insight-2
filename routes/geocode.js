@@ -407,7 +407,8 @@ router.post('/insight', function(req, res) {
             // // Sort by distance
             // responseObj = sortByKey(responseObj, 'distance');
             // res.send(responseObj);
-            callback(acceptedEvents);
+            var returnArr = existingArray.concat(acceptedEvents);
+            callback(returnArr);
         });
     };
 
@@ -434,6 +435,64 @@ router.post('/insight', function(req, res) {
     //         res.send(placesArray);
     //     });
     // }
+    var places_bool = req.body.places === 'true';
+    var events_bool = req.body.events === 'true';
+    var people_bool = req.body.people === 'true';
+
+    if (places_bool === true && events_bool === false && people_bool === false) {
+        addGoogleRadarSearch(placeDetails, function(finalArray) {
+            // sort the final array by distance
+            sortByKey(finalArray, 'distance');
+            // splice the array in half, since we have THRESHOLD * 2 total elements
+            // (THRESHOLD) from each
+            var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
+            res.send(splicedArr);
+        });
+    } else if (places_bool === false && events_bool === true && people_bool === false) {
+        addFacebookEvents(placeDetails, function(finalArray) {
+            // sort the final array by distance
+            sortByKey(finalArray, 'distance');
+            // splice the array in half, since we have THRESHOLD * 2 total elements
+            // (THRESHOLD) from each
+            var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
+            res.send(splicedArr);
+        });
+    } else if (places_bool === false && events_bool === false && people_bool === true) {
+
+    } else if (places_bool === true && events_bool === false && people_bool === true) {
+
+    } else if (places_bool === true && events_bool === true && people_bool === false) {
+        addGoogleRadarSearch(placeDetails, function(intermediaryArray) {
+            addFacebookEvents(intermediaryArray, function(finalArray) {
+                // sort the final array by distance
+                sortByKey(finalArray, 'distance');
+                // splice the array in half, since we have THRESHOLD * 2 total elements
+                // (THRESHOLD) from each
+                var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                res.send(splicedArr);
+            });
+        });
+    } else if (places_bool === false && events_bool === true && people_bool === true) {
+
+    } else {
+        addGoogleRadarSearch(placeDetails, function(intermediaryArray) {
+            addFacebookEvents(intermediaryArray, function(finalArray) {
+
+                /*
+                DO THE PEOPLE THING
+                */
+                // addPeopleEvents
+
+
+                // sort the final array by distance
+                sortByKey(finalArray, 'distance');
+                // splice the array in half, since we have THRESHOLD * 2 total elements
+                // (THRESHOLD) from each
+                var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                res.send(splicedArr);
+            });
+        });
+    }
 });
 
 router.post('/directions', function(req, res) {
