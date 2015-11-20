@@ -314,7 +314,6 @@ router.post('/insight', function(req, res) {
         var FB = require('fb');
         FB.setAccessToken(req.body.authToken);
         FB.api('/me/friends', function(response) {
-            console.log(response);
             // array of objects
             var friends = response.data;
 
