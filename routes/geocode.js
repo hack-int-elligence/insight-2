@@ -110,6 +110,66 @@ var invertHeadingsFromArray = function(array) {
     return obj;
 };
 
+/*  
+ * Process the relative values of event objects on a logarithmic scale
+ * These include:
+ *    - Heights
+ *
+ */
+var processRelativeValues = function(array) {
+    console.log('Adding quartiles...');
+    // Process relative heights
+    var smallestDistance = Number(array[0].distance);
+    var largestDistance = Number(array[array.length - 1].distance);
+    
+    // normalize values to prevent log(0)
+    smallestDistance = (smallestDistance === 0) ? 0.0001 : smallestDistance;
+    largestDistance = (largestDistance === 0) ? 0.0001 : largestDistance;
+
+    // Get maximum and minimum rankings
+    var lowestRanking = Math.min.apply(Math, array.map(function(elem) {
+        var val = elem.hasOwnProperty('yelp') ? (elem.hasOwnProperty('rating') ? elem.yelp.rating : 0) : 0
+            // return impossible values for highest and lowest for zero values
+        return (val === undefined) ? 100 : val;
+    }));
+    var highestRanking = Math.max.apply(Math, array.map(function(elem) {
+        var val = elem.hasOwnProperty('yelp') ? (elem.hasOwnProperty('rating') ? elem.yelp.rating : 0) : 0
+            // return impossible values for highest and lowest for zero values
+        return (val === undefined) ? -1 : val;
+    }));
+    // normalize values to prevent log(0)
+    lowestRanking = (lowestRanking === 0) ? 0.0001 : lowestRanking;
+    highestRanking = (highestRanking === 0) ? 0.0001 : highestRanking;
+
+
+    array.forEach(function(element) {
+        element.quartiles = {};
+        // height quartile calc
+        element.quartiles.height = (Math.log(largestDistance) - Math.log(element.distance)) / (
+            Math.log(largestDistance) - Math.log(smallestDistance)
+        );
+        // Fix edge cases: infinite quartiles are pushed to 1
+        element.quartiles.height = (element.quartiles.height === Infinity) ? 1 : element.quartiles.height;
+        // If only one element, put in the center of the screen.
+        element.quartiles.height = (isNaN(element.quartiles.height)) ? 0.5 : element.quartiles.height;
+        // ranking quartile calc
+        if (element.hasOwnProperty('yelp') && element.yelp.hasOwnProperty('rating')) {
+            element.quartiles.ranking = (Math.log(highestRanking) - Math.log(element.yelp.rating)) / (
+                Math.log(highestRanking) - Math.log(lowestRanking)
+            );
+            // Fix edge cases: infinite quartiles are pushed to 1
+            element.quartiles.ranking = (element.quartiles.ranking === Infinity) ? 1 : element.quartiles.ranking;
+            // If only one element, put in the center of the screen.
+            element.quartiles.ranking = (isNaN(element.quartiles.ranking)) ? 0 : element.quartiles.ranking;
+
+        }
+
+
+    });
+    console.log('Finished adding quartiles!');
+    return array;
+};
+
 var router = express.Router();
 
 router.get('/', function(req, res) {
@@ -461,6 +521,7 @@ router.post('/insight', function(req, res) {
             // splice the array in half, since we have THRESHOLD * 2 total elements
             // (THRESHOLD) from each
             var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
+            splicedArr = processRelativeValues(splicedArr);
             res.send(splicedArr);
         });
     } else if (places_bool === false && events_bool === true && people_bool === false) {
@@ -470,6 +531,7 @@ router.post('/insight', function(req, res) {
             // splice the array in half, since we have THRESHOLD * 2 total elements
             // (THRESHOLD) from each
             var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
+            splicedArr = processRelativeValues(splicedArr);
             res.send(splicedArr);
         });
     } else if (places_bool === false && events_bool === false && people_bool === true) {
@@ -479,6 +541,7 @@ router.post('/insight', function(req, res) {
             // splice the array in half, since we have THRESHOLD * 2 total elements
             // (THRESHOLD) from each
             var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+            splicedArr = processRelativeValues(splicedArr);
             res.send(splicedArr);
         });
     } else if (places_bool === true && events_bool === false && people_bool === true) {
@@ -489,6 +552,7 @@ router.post('/insight', function(req, res) {
                 // splice the array in half, since we have THRESHOLD * 2 total elements
                 // (THRESHOLD) from each
                 var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                splicedArr = processRelativeValues(splicedArr);
                 res.send(splicedArr);
             });
         });
@@ -500,6 +564,7 @@ router.post('/insight', function(req, res) {
                 // splice the array in half, since we have THRESHOLD * 2 total elements
                 // (THRESHOLD) from each
                 var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                splicedArr = processRelativeValues(splicedArr);
                 res.send(splicedArr);
             });
         });
@@ -511,6 +576,7 @@ router.post('/insight', function(req, res) {
                 // splice the array in half, since we have THRESHOLD * 2 total elements
                 // (THRESHOLD) from each
                 var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                splicedArr = processRelativeValues(splicedArr);
                 res.send(splicedArr);
             });
         });
@@ -523,6 +589,7 @@ router.post('/insight', function(req, res) {
                     // splice the array in half, since we have THRESHOLD * 2 total elements
                     // (THRESHOLD) from each
                     var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                    splicedArr = processRelativeValues(splicedArr);
                     res.send(splicedArr);
                 });
             });
