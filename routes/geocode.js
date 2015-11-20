@@ -4,6 +4,9 @@ var fb = require('fb');
 var moment = require('moment');
 var request = require('request');
 var Yelp = require('yelp')['default'];
+var Parse = require('parse/node').Parse;
+var InsightUserClass = Parse.Object.extend('InsightUser');
+
 
 
 var g_API_key = ['AIzaSyD4C_0grHO3gWxgCLGbndJy_ejDXbKNDXk', ];
@@ -127,7 +130,7 @@ router.post('/insight', function(req, res) {
     // set radius
     var placeRadius = Number(req.body.radius || RADIUS_SERVER_DEFAULT);
 
- 
+
     /* 
      * GOOGLE RADAR SEARCH
      *
@@ -184,7 +187,10 @@ router.post('/insight', function(req, res) {
                                 // push only relevent API response information
                                 var new_place_element = {
                                     name: details.result.name,
-                                    location: details.result.geometry.location,
+                                    location: {
+                                        latitude: details.result.geometry.location.lat,
+                                        longitude: details.result.geometry.location.lng
+                                    },
                                     icon: details.result.icon,
                                     place_id: details.result.place_id,
                                     address: details.result.formatted_address,
@@ -300,6 +306,105 @@ router.post('/insight', function(req, res) {
         });
     };
 
+    var addPeopleLocations = function(existingArray, callback) {
+        console.log('Getting people locations...');
+        var facebookUserId = req.facebookUserId;
+
+        // get friends
+        var FB = require('fb');
+        FB.setAccessToken(req.body.authToken);
+        FB.api('/me/friends', function(response) {
+            console.log(response);
+            // array of objects
+            var friends = response.data;
+
+            var peopleLocations = [];
+
+            // expects each of the users to be present
+            var expected_length = friends.length;
+
+            for (var i = 0; i < friends.length; i++) {
+                var facebookFriendId = friends[i].id;
+                var query = new Parse.Query(InsightUserClass);
+                query.equalTo('facebookUserId', facebookFriendId);
+                query.first({
+                    success: function(user) {
+                        if (user) {
+                            // user exists in Parse db
+                            // position -> location  - latitude, longitude keys
+                            // checkins -> three keys: facebook place id, name, and position and timestamp
+
+                            // 1 - check to see whether the user's lastActive timestamp was within X seconds
+                            var tolerance = 5 * 60 * 1000;
+                            var checkinTolerance = 7 * 24 * 60 * 60 * 1000;
+                            var current_time = new moment().unix();
+                            if (current_time - lastActive <= tolerance) {
+                                // within tolerance level for timestamps
+                                var userObject = {};
+                                var lastActive = Number(user.lastActive);
+                                userObject.name = user.facebookUserName;
+                                userObject.location = user.position;
+                                userObject.type = 'people';
+                                userObject.subtype = 'person';
+                                // push the user's current position to the array
+                                acceptedEvents.push(userObject);
+                            }
+
+                            // 2 - only accept check in objects that have appropriate position object and timestamp
+                            var checkins = user.checkins;
+                            for (var i = 0; i < checkins.length; i++) {
+                                var checkinInstance = checkins[i];
+                                // Make sure distance of checked-in
+                                var abs_distance = haversineDistance(
+                                    // your location
+                                    Number(req.body.latitude),
+                                    Number(req.body.longitude),
+                                    // location of resulting place
+                                    Number(checkinInstance.position.latitude),
+                                    Number(checkinInstance.position.longitude)
+                                );
+                                if (abs_distance <= placeRadius) {
+                                    if (current_time - Number(checkinInstance.timestamp) <= checkinTolerance) {
+                                        // accept object - format and add
+                                        var checkinPlaceObj = {
+                                            name: user.facebookUserName,
+                                            location: {
+                                                latitude: checkinInstance.position.latitude,
+                                                longitude: checkinInstance.position.longitude
+                                            },
+                                            place_id: facebookPlaceId,
+                                            type: 'people',
+                                            subtype: 'checkin'
+                                        };
+                                        acceptedEvents.push(checkinPlaceObj);
+                                        // increase the expeted count for each checked in object, so that the loop ends
+                                        expected_length++;
+                                    }
+                                }
+                                // ignore check-in object, it sucks and does not matter
+                                // count does NOT need to be incremented/decremented in this case
+                            }
+
+                            if (peopleLocations.length == expected_length) {
+                                // combine the arrays and then return results in the callback
+                                var finalArray = existingArray.concat(acceptedEvents);
+                                callback(finalArray);
+                            }
+
+                        } else {
+                            // ignore, this is a friend who hasn't used the app ever
+                            expected_length--;
+                        }
+                    },
+                    error: function(err) {
+                        console.log('Parse query error!');
+                        console.log(err);
+                        res.send(err);
+                    }
+                });
+            }
+        });
+    };
     /* 
      * MASTER REQUEST HANDLER
      *
@@ -331,9 +436,25 @@ router.post('/insight', function(req, res) {
             res.send(splicedArr);
         });
     } else if (places_bool === false && events_bool === false && people_bool === true) {
-
+        addPeopleLocations(placeDetails, function(finalArray) {
+            // sort the final array by distance
+            sortByKey(finalArray, 'distance');
+            // splice the array in half, since we have THRESHOLD * 2 total elements
+            // (THRESHOLD) from each
+            var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+            res.send(splicedArr);
+        });
     } else if (places_bool === true && events_bool === false && people_bool === true) {
-
+        addGoogleRadarSearch(placeDetails, function(intermediaryArray) {
+            addPeopleLocations(intermediaryArray, function(finalArray) {
+                // sort the final array by distance
+                sortByKey(finalArray, 'distance');
+                // splice the array in half, since we have THRESHOLD * 2 total elements
+                // (THRESHOLD) from each
+                var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                res.send(splicedArr);
+            });
+        });
     } else if (places_bool === true && events_bool === true && people_bool === false) {
         addGoogleRadarSearch(placeDetails, function(intermediaryArray) {
             addFacebookEvents(intermediaryArray, function(finalArray) {
@@ -346,23 +467,27 @@ router.post('/insight', function(req, res) {
             });
         });
     } else if (places_bool === false && events_bool === true && people_bool === true) {
-
-    } else {
-        addGoogleRadarSearch(placeDetails, function(intermediaryArray) {
-            addFacebookEvents(intermediaryArray, function(finalArray) {
-
-                /*
-                DO THE PEOPLE THING
-                */
-                // addPeopleEvents
-
-
+        addFacebookEvents(placeDetails, function(intermediaryArray) {
+            addPeopleLocations(intermediaryArray, function(finalArray) {
                 // sort the final array by distance
                 sortByKey(finalArray, 'distance');
                 // splice the array in half, since we have THRESHOLD * 2 total elements
                 // (THRESHOLD) from each
                 var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
                 res.send(splicedArr);
+            });
+        });
+    } else {
+        addGoogleRadarSearch(placeDetails, function(intermediaryArray) {
+            addFacebookEvents(intermediaryArray, function(intermediaryArrayTheReturn) {
+                addPeopleLocations(intermediaryArrayTheReturn, function(finalArray) {
+                    // sort the final array by distance
+                    sortByKey(finalArray, 'distance');
+                    // splice the array in half, since we have THRESHOLD * 2 total elements
+                    // (THRESHOLD) from each
+                    var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD * 2));
+                    res.send(splicedArr);
+                });
             });
         });
     }
