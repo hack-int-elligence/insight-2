@@ -127,116 +127,7 @@ router.post('/insight', function(req, res) {
     // set radius
     var placeRadius = Number(req.body.radius || RADIUS_SERVER_DEFAULT);
 
-    /*
-     * Recrusive asynchronous callback, which calls the final execution
-     * callback to end the recursion (called 'callback' - carried down until
-     * the bottom out case).
-     * Enables dynamic filtering during list population to get true closest   
-     * results.
-     */
-    var infoCallback = function(response, i, existingArray, itemCount, callback) {
-        if (itemCount === THRESHOLD) {
-            return callback(existingArray);
-        }
-        if (response.results.length === 0) {
-            return callback(existingArray);
-        }
-        // using the reference field, make individual PlaceDetails requests via the Places API
-        googleplaces.placeDetailsRequest({
-            reference: response.results[i].reference
-        }, function(detailsErr, details) {
-            // call/calculate true heading
-            bearing = haversineAngle(
-                // your location
-                Number(req.body.latitude),
-                Number(req.body.longitude),
-                // location of resulting place
-                details.result.geometry.location.lat,
-                details.result.geometry.location.lng
-            );
-            abs_distance = haversineDistance(
-                // your location
-                Number(req.body.latitude),
-                Number(req.body.longitude),
-                // location of resulting place
-                details.result.geometry.location.lat,
-                details.result.geometry.location.lng
-            );
-            // must have lat/long geometry for insight
-            if (details.result.geometry && abs_distance <= placeRadius) {
-                // resultCount = resultCount + 1;
-                // console.log(resultCount);
-                // push only relevent API response information
-                var new_place_element = {
-                    name: details.result.name,
-                    location: details.result.geometry.location,
-                    icon: details.result.icon,
-                    place_id: details.result.place_id,
-                    address: details.result.formatted_address,
-                    website: details.result.website,
-                    rating: details.result.rating,
-                    tags: details.result.types,
-                    heading: (bearing < 0) ? bearing + 360 : bearing,
-                    headingRelative: bearing,
-                    distance: abs_distance
-                };
-                var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
-                yelp.search({
-                    term: details.result.name,
-                    ll: latitude_parameter,
-                    sort: 1,
-                    limit: 1,
-                    radius_filter: 50
-                }).then(function(data) {
-                    if (data.businesses.length > 0) {
-                        var yelp_distance_to_result = haversineDistance(details.result.geometry.location.lat,
-                            details.result.geometry.location.lng, data.businesses[0].location.coordinate.latitude,
-                            data.businesses[0].location.coordinate.longitude);
-
-                        if (yelp_distance_to_result < 100) {
-                            var business = data.businesses[0];
-
-                            new_place_element.yelp_name = business['name'];
-                            new_place_element.yelp_rating = business['rating'];
-                            new_place_element.is_closed = business['is_closed'];
-                            new_place_element.yelp_review_link = business['mobile_url'];
-
-                            yelp.business(business['id']).then(function(business_data) {
-                                new_place_element.yelp_review = business_data['reviews'][0];
-                                existingArray.push(new_place_element);
-                                if (existingArray.length < (THRESHOLD * 2)) {
-                                    var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
-                                    return returnVal;
-                                } else {
-                                    return existingArray;
-                                }
-                            });
-                        } else {
-                            existingArray.push(new_place_element);
-                            if (existingArray.length < (THRESHOLD * 2)) {
-                                var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
-                                return returnVal;
-                            } else {
-                                return existingArray;
-                            }
-                        }
-                    } else {
-                        existingArray.push(new_place_element);
-                        if (existingArray.length < (THRESHOLD * 2)) {
-                            var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
-                            return returnVal;
-                        } else {
-                            return existingArray;
-                        }
-                    }
-                });
-            } else {
-                var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
-                return returnVal;
-            }
-        });
-    };
-
+ 
     /* 
      * GOOGLE RADAR SEARCH
      *
@@ -302,7 +193,9 @@ router.post('/insight', function(req, res) {
                                     tags: details.result.types,
                                     heading: (bearing < 0) ? bearing + 360 : bearing,
                                     headingRelative: bearing,
-                                    distance: abs_distance
+                                    distance: abs_distance,
+                                    type: 'place',
+                                    yelp: {}
                                 };
                                 var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
                                 yelp.search({
@@ -320,13 +213,14 @@ router.post('/insight', function(req, res) {
                                         if (yelp_distance_to_result < 100) {
                                             var business = data.businesses[0];
 
-                                            new_place_element.yelp_name = business['name'];
-                                            new_place_element.yelp_rating = business['rating'];
+
+                                            new_place_element.yelp.name = business['name'];
+                                            new_place_element.yelp.rating = business['rating'];
                                             new_place_element.is_closed = business['is_closed'];
-                                            new_place_element.yelp_review_link = business['mobile_url'];
+                                            new_place_element.yelp.review_link = business['mobile_url'];
 
                                             yelp.business(business['id']).then(function(business_data) {
-                                                new_place_element.yelp_review = business_data['reviews'][0];
+                                                new_place_element.yelp.review_text = business_data['reviews'][0]['excerpt'];
                                                 existingArray.push(new_place_element);
                                                 if (existingArray.length == expected_length) {
                                                     callback(existingArray);
@@ -346,8 +240,7 @@ router.post('/insight', function(req, res) {
                                     }
                                 });
                             } else {
-                                var returnVal = infoCallback(response, (i + 1), existingArray, (itemCount + 1), callback);
-                                return returnVal;
+                                expected_length--;
                             }
                         });
                     }
@@ -394,6 +287,7 @@ router.post('/insight', function(req, res) {
                             event.place.location.latitude,
                             event.place.location.longitude
                         );
+                        event.type = 'event';
                         // make sure the event is in radius
                         if (event.distance <= Number(radius)) {
                             acceptedEvents.push(event);
@@ -401,12 +295,6 @@ router.post('/insight', function(req, res) {
                     }
                 }
             }
-            // // process events before sending
-            // var responseObj = acceptedEvents;
-            // // responseObj = invertHeadingsFromArray(acceptedEvents);
-            // // Sort by distance
-            // responseObj = sortByKey(responseObj, 'distance');
-            // res.send(responseObj);
             var returnArr = existingArray.concat(acceptedEvents);
             callback(returnArr);
         });
@@ -419,22 +307,7 @@ router.post('/insight', function(req, res) {
      */
     // for every place reference in the response, gather meta-info
     var placeDetails = [];
-    // if (req.body.query === undefined || req.body.query === 'all') {
-    //     addGoogleRadarSearch(placeDetails, function(finalArray) {
-    //         // sort the final array by distance
-    //         sortByKey(finalArray, 'distance');
-    //         // splice the array in half, since we have THRESHOLD * 2 total elements
-    //         // (THRESHOLD) from each
-    //         var splicedArr = finalArray.splice(0, Math.floor(THRESHOLD));
-    //         res.send(splicedArr);
-    //     });
-    // } else if (req.body.query === 'places') {
-    //     addGoogleRadarSearch(placeDetails, function(placesArray) {
-    //         // sort the final array by distance
-    //         sortByKey(placesArray, 'distance');
-    //         res.send(placesArray);
-    //     });
-    // }
+
     var places_bool = req.body.places === 'true';
     var events_bool = req.body.events === 'true';
     var people_bool = req.body.people === 'true';
