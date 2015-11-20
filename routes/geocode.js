@@ -366,6 +366,7 @@ router.post('/insight', function(req, res) {
                                     );
                                     userObject.headingRelative = userBearing;
                                     userObject.heading = (userBearing < 0) ? userBearing + 360 : userBearing;
+                                    userObject.distance = user_abs_distance;
 
                                     // push the user's current position to the array
                                     acceptedEvents.push(userObject);
@@ -377,7 +378,7 @@ router.post('/insight', function(req, res) {
                             for (var i = 0; i < checkins.length; i++) {
                                 var checkinInstance = checkins[i];
                                 // Make sure distance of checked-in
-                                var abs_distance = haversineDistance(
+                                var checkinObjAbsDistance = haversineDistance(
                                     // your location
                                     Number(req.body.latitude),
                                     Number(req.body.longitude),
@@ -385,7 +386,7 @@ router.post('/insight', function(req, res) {
                                     Number(checkinInstance.position.latitude),
                                     Number(checkinInstance.position.longitude)
                                 );
-                                if (abs_distance <= placeRadius) {
+                                if (checkinObjAbsDistance <= placeRadius) {
                                     if (current_time - Number(checkinInstance.timestamp) <= checkinTolerance) {
                                         // accept object - format and add
                                         var checkinPlaceObj = {
@@ -408,6 +409,7 @@ router.post('/insight', function(req, res) {
                                         );
                                         checkinPlaceObj.headingRelative = checkinInstanceBearing;
                                         checkinPlaceObj.heading = (checkinInstanceBearing < 0) ? checkinInstanceBearing + 360 : checkinInstanceBearing;
+                                        checkinPlaceObj.distance = checkinObjAbsDistance;
 
                                         acceptedEvents.push(checkinPlaceObj);
                                         // increase the expeted count for each checked in object, so that the loop ends
