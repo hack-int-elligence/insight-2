@@ -138,6 +138,9 @@ router.post('/insight', function(req, res) {
         if (itemCount === THRESHOLD) {
             return callback(existingArray);
         }
+        if (response.results.length === 0) {
+            return callback(existingArray);
+        }
         // using the reference field, make individual PlaceDetails requests via the Places API
         googleplaces.placeDetailsRequest({
             reference: response.results[i].reference
