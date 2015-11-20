@@ -318,7 +318,7 @@ router.post('/insight', function(req, res) {
             // array of objects
             var friends = response.data;
 
-            var peopleLocations = [];
+            var acceptedEvents = [];
 
             // expects each of the users to be present
             var expected_length = friends.length;
@@ -330,7 +330,6 @@ router.post('/insight', function(req, res) {
                 query.first({
                     success: function(user) {
                         if (user) {
-                            console.log("THIS IS THE UESR", user);
                             // user exists in Parse db
                             // position -> location  - latitude, longitude keys
                             // checkins -> three keys: facebook place id, name, and position and timestamp
@@ -353,6 +352,8 @@ router.post('/insight', function(req, res) {
 
                             // 2 - only accept check in objects that have appropriate position object and timestamp
                             var checkins = user.get('checkins');
+                            console.log(checkins);
+                            console.log(acceptedEvents);
                             for (var i = 0; i < checkins.length; i++) {
                                 var checkinInstance = checkins[i];
                                 // Make sure distance of checked-in
@@ -386,7 +387,7 @@ router.post('/insight', function(req, res) {
                                 // count does NOT need to be incremented/decremented in this case
                             }
 
-                            if (peopleLocations.length == expected_length) {
+                            if (acceptedEvents.length == expected_length) {
                                 // combine the arrays and then return results in the callback
                                 var finalArray = existingArray.concat(acceptedEvents);
                                 callback(finalArray);
