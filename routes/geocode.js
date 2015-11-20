@@ -299,15 +299,15 @@ router.post('/insight', function(req, res) {
                                 //     console.log(intersection);
                                 //     new_place_element.category = intersection;
                                 // };
-                                for (var i = 0; i < searchCategories.length; i++) {
-                                    var specCategory = searchCategories[i];
-                                    if (details.result.types !== undefined) {
-                                        if (details.result.types.indexOf(specCategory) > -1) {
-                                            new_place_element.category = specCategory;
-                                            break;
-                                        }
-                                    }
-                                };
+                                // for (var i = 0; i < searchCategories.length; i++) {
+                                //     var specCategory = searchCategories[i];
+                                //     if (details.result.types !== undefined) {
+                                //         if (details.result.types.indexOf(specCategory) > -1) {
+                                //             new_place_element.category = specCategory;
+                                //             break;
+                                //         }
+                                //     }
+                                // };
                                 var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
                                 yelp.search({
                                     term: details.result.name,
