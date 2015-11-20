@@ -177,7 +177,7 @@ router.post('/insight', function(req, res) {
                     heading: (bearing < 0) ? bearing + 360 : bearing,
                     headingRelative: bearing,
                     distance: abs_distance
-                }
+                };
                 yelp.search({
                     term: 'food',
                     ll: toString(details.result.geometry.location.lat) + ',' + toString(details.result.geometry.location.lat),
