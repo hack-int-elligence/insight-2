@@ -403,7 +403,30 @@ router.post('/insight', function(req, res) {
                         if (event.distance <= Number(radius)) {
                             acceptedEvents.push(event);
                         }
+                    } else {
+                        var bearing = haversineAngle(
+                            // your location
+                            Number(req.body.latitude),
+                            Number(req.body.longitude),
+                            // location of resulting place
+                            event.place.location.latitude,
+                            event.place.location.longitude
+                        );
+                        event.heading = (bearing < 0) ? bearing + 360 : bearing;
+                        event.headingRelative = bearing;
+                        event.distance = haversineDistance(
+                            // your location
+                            Number(req.body.latitude),
+                            Number(req.body.longitude),
+                            // location of resulting place
+                            event.place.location.latitude,
+                            event.place.location.longitude
+                        );
+                        event.type = 'event';
+                        acceptedEvents.push(event);
                     }
+                } else {
+                    console.log(event);
                 }
             }
             var returnArr = existingArray.concat(acceptedEvents);
