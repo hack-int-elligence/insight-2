@@ -9,7 +9,7 @@ var Parse = require('parse/node').Parse;
 // so insecure...but who cares anyway?
 Parse.initialize('selZeqRUEyS0xb2UAAot2AI2pT8a2F7ggqAbyByw', 'xzy1tbgOSU6NNefFJ26RbRacuYyh0E99ikRpmvjO');
 
-var InsightUser = new (Parse.Object.extend('InsightUser'))();
+var InsightUserClass = Parse.Object.extend('InsightUser');
 
 var router = express.Router();
 
@@ -28,18 +28,49 @@ router.post('/*', function(req, res, next) {
       var facebookUserId = facebookUserData.id;
       var facebookUserName = facebookUserData.name;
       var lastActive = new moment().unix();
-      InsightUser.save({
-        facebookUserId: facebookUserId,
-        facebookUserName: facebookUserName,
-        lastActive: lastActive
-      }, {
-        success: function(currentInsightUser) {
-          console.log('Updated lastActive timestamp for ' + facebookUserName);
-          next();
+
+      // first check if the user already exists in the Parse Cloud
+      var query = new Parse.Query(InsightUserClass);
+      query.equalTo('facebookUserId', facebookUserId);
+      // return the first result only (should only be one anyway)
+      query.first({
+        success: function(user) {
+          if (user) {
+            user.save({
+              lastActive: lastActive
+            }, {
+              success: function(currentInsightUser) {
+                console.log('Updated lastActive timestamp for ' + facebookUserName);
+                next();
+              },
+              error: function(object, err) {
+                console.log('Parse save error!');
+                console.log(err);
+                res.send(err);
+              }
+            });
+          } else {
+            // create a new InsightUser object
+            InsightUser = new InsightUserClass();
+            InsightUser.save({
+              facebookUserId: facebookUserId,
+              facebookUserName: facebookUserName,
+              lastActive: lastActive
+            }, {
+              success: function(currentInsightUser) {
+                console.log('Created new record and updated lastActive timestamp for ' + facebookUserName);
+                next();
+              },
+              error: function(object, err) {
+                console.log('Parse save error!');
+                console.log(err);
+                res.send(err);
+              }
+            });
+          }
         },
-        error: function(object, err) {
-          console.log('Parse save error!');
-          console.log(object);
+        error: function(err) {
+          console.log('Parse query error!');
           console.log(err);
           res.send(err);
         }
