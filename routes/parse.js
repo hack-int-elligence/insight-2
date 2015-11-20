@@ -19,6 +19,11 @@ var FACEBOOK_APP_SECRET = 'a7e1c3c097560ba5ae65015405a1f19e';
 /* This runs for all POST requests to the server */
 router.post('/*', function(req, res, next) {
   // if this is a POST request that contains an authToken, update the Parse object
+  if (req.body.environment === 'demo') {
+    req.body.latitude = 40.7305476;
+    req.body.longitude = -73.9915412;
+  }
+
   if (req.body.authToken) {
     var FB = require('fb');
     FB.setAccessToken(req.body.authToken);
