@@ -338,10 +338,10 @@ router.post('/insight', function(req, res) {
                             var tolerance = 5 * 60 * 1000;
                             var checkinTolerance = 7 * 24 * 60 * 60 * 1000;
                             var current_time = new moment().unix();
+                            var lastActive = Number(user.get('lastActive'));
                             if (current_time - lastActive <= tolerance) {
                                 // within tolerance level for timestamps
                                 var userObject = {};
-                                var lastActive = Number(user.get('lastActive'));
                                 userObject.name = user.get('facebookUserName');
                                 userObject.location = user.get('position');
                                 userObject.type = 'people';
