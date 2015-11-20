@@ -243,12 +243,14 @@ router.post('/insight', function(req, res) {
                 var bearing, abs_distance, resultCount = 0;
 
                 var starting_length = existingArray.length;
-                var expected_length = starting_length + response.results.length;
+                var MAX_LENGTH = 25;
+                var stop_length = (response.results.length > MAX_LENGTH) ? MAX_LENGTH : response.results.length
+                var expected_length = starting_length + stop_length;
 
                 if (response.results.length == 0) {
                     callback(existingArray);
                 } else {
-                    for (var i = 0; i < response.results.length; i++) {
+                    for (var i = 0; i < stop_length; i++) {
                         googleplaces.placeDetailsRequest({
                             reference: response.results[i].reference
                         }, function(detailsErr, details) {
@@ -299,15 +301,15 @@ router.post('/insight', function(req, res) {
                                 //     console.log(intersection);
                                 //     new_place_element.category = intersection;
                                 // };
-                                // for (var i = 0; i < searchCategories.length; i++) {
-                                //     var specCategory = searchCategories[i];
-                                //     if (details.result.types !== undefined) {
-                                //         if (details.result.types.indexOf(specCategory) > -1) {
-                                //             new_place_element.category = specCategory;
-                                //             break;
-                                //         }
-                                //     }
-                                // };
+                                for (var i = 0; i < searchCategories.length; i++) {
+                                    var specCategory = searchCategories[i];
+                                    if (details.result.types !== undefined) {
+                                        if (details.result.types.indexOf(specCategory) > -1) {
+                                            new_place_element.category = specCategory;
+                                            break;
+                                        }
+                                    }
+                                };
                                 var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
                                 yelp.search({
                                     term: details.result.name,
