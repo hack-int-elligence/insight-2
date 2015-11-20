@@ -79,8 +79,8 @@
         var lon = Number($('#long').val());
         var authTokenTest = Jacob;
         $.post('/fb_checkin', {
-            latitude: lat,
-            longitude: lon,
+            latitude: 37.485802 || lat,
+            longitude: -122.147011 || lon,
             authToken: authTokenTest,
             name: 'Facebook HQ'
         }, function(data) {
