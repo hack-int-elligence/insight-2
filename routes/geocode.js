@@ -330,6 +330,7 @@ router.post('/insight', function(req, res) {
                 query.first({
                     success: function(user) {
                         if (user) {
+                            console.log("THIS IS THE UESR", user);
                             // user exists in Parse db
                             // position -> location  - latitude, longitude keys
                             // checkins -> three keys: facebook place id, name, and position and timestamp
@@ -341,9 +342,9 @@ router.post('/insight', function(req, res) {
                             if (current_time - lastActive <= tolerance) {
                                 // within tolerance level for timestamps
                                 var userObject = {};
-                                var lastActive = Number(user.lastActive);
-                                userObject.name = user.facebookUserName;
-                                userObject.location = user.position;
+                                var lastActive = Number(user.get('lastActive'));
+                                userObject.name = user.get('facebookUserName');
+                                userObject.location = user.get('position');
                                 userObject.type = 'people';
                                 userObject.subtype = 'person';
                                 // push the user's current position to the array
@@ -351,7 +352,7 @@ router.post('/insight', function(req, res) {
                             }
 
                             // 2 - only accept check in objects that have appropriate position object and timestamp
-                            var checkins = user.checkins;
+                            var checkins = user.get('checkins');
                             for (var i = 0; i < checkins.length; i++) {
                                 var checkinInstance = checkins[i];
                                 // Make sure distance of checked-in
@@ -367,7 +368,7 @@ router.post('/insight', function(req, res) {
                                     if (current_time - Number(checkinInstance.timestamp) <= checkinTolerance) {
                                         // accept object - format and add
                                         var checkinPlaceObj = {
-                                            name: user.facebookUserName,
+                                            name: user.get('facebookUserName'),
                                             location: {
                                                 latitude: checkinInstance.position.latitude,
                                                 longitude: checkinInstance.position.longitude
