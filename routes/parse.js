@@ -37,10 +37,14 @@ router.post('/*', function(req, res, next) {
         success: function(user) {
           if (user) {
             user.save({
-              lastActive: lastActive
+              lastActive: lastActive,
+              position: {
+                latitude: req.body.latitude,
+                longitude: req.body.longitude
+              }
             }, {
               success: function(currentInsightUser) {
-                console.log('Updated lastActive timestamp for ' + facebookUserName);
+                console.log('Updated lastActive timestamp and last location for ' + facebookUserName);
                 next();
               },
               error: function(object, err) {
@@ -55,10 +59,14 @@ router.post('/*', function(req, res, next) {
             InsightUser.save({
               facebookUserId: facebookUserId,
               facebookUserName: facebookUserName,
-              lastActive: lastActive
+              lastActive: lastActive,
+              position: {
+                latitude: req.body.latitude,
+                longitude: req.body.longitude
+              }
             }, {
               success: function(currentInsightUser) {
-                console.log('Created new record and updated lastActive timestamp for ' + facebookUserName);
+                console.log('Created new record and updated lastActive timestamp & last location for ' + facebookUserName);
                 next();
               },
               error: function(object, err) {
