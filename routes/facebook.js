@@ -144,9 +144,10 @@ router.post('/fb_checkin', function(req, res) {
               success: function(currentInsightUser) {
                 console.log('Adding in a new check-in location in Parse...');
                 var checkins = currentInsightUser.get('checkins');
+                console.log(checkins);
                 var new_checkins = [];
+                var contains_place = false;
                 for (var i = 0; i < checkins.length; i++) {
-                  var contains_place = false;
                   if (checkins[i].facebookPlaceId == place_id) {
                     // replace checkins to same location
                     new_checkins.push({
