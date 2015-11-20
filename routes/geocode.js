@@ -86,6 +86,30 @@ var sortByKey = function(array, key) {
 };
 
 /*
+ * Gets intersection in O(n) with non-destruction
+ * Uses secret special sauce
+ */
+var arrayIntersection = function(a, b) {
+    var ai = 0,
+        bi = 0;
+    var result = new Array();
+
+    while (ai < a.length && bi < b.length) {
+        if (a[ai] < b[bi]) {
+            ai++;
+        } else if (a[ai] > b[bi]) {
+            bi++;
+        } else /* they're equal */ {
+            result.push(a[ai]);
+            ai++;
+            bi++;
+        }
+    }
+
+    return result;
+}
+
+/*
  * "Inverts" arrays of locations
  * Converts an array of locations to an object with keys of rounded headings mapping to
  * arrays of locations sorted by distance in increasing order
@@ -117,7 +141,9 @@ var invertHeadingsFromArray = function(array) {
  *
  */
 var processRelativeValues = function(array) {
-    if (array.length === 0) { return array; };
+    if (array.length === 0) {
+        return array;
+    };
     console.log('Adding quartiles...');
     // Process relative heights
     var smallestDistance = Number(array[0].distance);
@@ -191,6 +217,8 @@ router.post('/insight', function(req, res) {
     // set radius
     var placeRadius = Number(req.body.radius || RADIUS_SERVER_DEFAULT);
 
+    var searchCategories = req.body.categories || ['subway', 'restaurant', 'movie_theater', 'shopping_mall', 'bar', 'cafe']
+
 
     /* 
      * GOOGLE RADAR SEARCH
@@ -203,7 +231,7 @@ router.post('/insight', function(req, res) {
         googleplaces.radarSearch({
             location: [Number(req.body.latitude), Number(req.body.longitude)],
             radius: placeRadius,
-            types: req.body.categories || ['restaurant']
+            types: searchCategories
         }, function(error, response) {
             if (error) {
                 // if there's an error, send back the error
@@ -224,6 +252,8 @@ router.post('/insight', function(req, res) {
                         googleplaces.placeDetailsRequest({
                             reference: response.results[i].reference
                         }, function(detailsErr, details) {
+                            // console.log(details.result.types === undefined);
+                            // console.log('\n\n\n\n\n\n\n');
                             // call/calculate true heading
                             bearing = haversineAngle(
                                 // your location
@@ -262,7 +292,21 @@ router.post('/insight', function(req, res) {
                                     headingRelative: bearing,
                                     distance: abs_distance,
                                     type: 'place',
-                                    yelp: {}
+                                    yelp: {},
+                                };
+                                // Add the search category which this place has in common
+                                // if (details.result.types !== undefined) {
+                                //     console.log(intersection);
+                                //     new_place_element.category = intersection;
+                                // };
+                                for (var i = 0; i < searchCategories.length; i++) {
+                                    var specCategory = searchCategories[i];
+                                    if (details.result.types !== undefined) {
+                                        if (details.result.types.indexOf(specCategory) > -1) {
+                                            new_place_element.category = specCategory;
+                                            break;
+                                        }
+                                    }
                                 };
                                 var latitude_parameter = String(details.result.geometry.location.lat) + ',' + String(details.result.geometry.location.lng);
                                 yelp.search({
