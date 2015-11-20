@@ -79,10 +79,10 @@
         var lon = Number($('#long').val());
         var authTokenTest = Jacob;
         $.post('/fb_checkin', {
-            latitude: 37.485802 || lat,
-            longitude: -122.147011 || lon,
+            latitude: 37.479874 || lat,
+            longitude: -122.152122 || lon,
             authToken: authTokenTest,
-            name: 'Facebook HQ'
+            name: 'Dashi Japanese Restaurant'
         }, function(data) {
             console.log(data);
         }, 'json');

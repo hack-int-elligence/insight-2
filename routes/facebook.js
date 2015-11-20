@@ -11,6 +11,7 @@ var g_API_key_offset = 0;
 
 Parse.initialize('selZeqRUEyS0xb2UAAot2AI2pT8a2F7ggqAbyByw', 'xzy1tbgOSU6NNefFJ26RbRacuYyh0E99ikRpmvjO');
 var InsightUserClass = Parse.Object.extend('InsightUser');
+var InsightCheckinClass = Parse.Object.extend('InsightCheckin');
 
 var hat = require('hat');
 var request = require('request');
@@ -95,6 +96,40 @@ var invertHeadingsFromArray = function(array) {
   return obj;
 };
 
+var levenshteinDistance = function(a, b) {
+  if (a.length == 0) return b.length;
+  if (b.length == 0) return a.length;
+
+  var matrix = [];
+
+  // increment along the first column of each row
+  var i;
+  for (i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  // increment each column in the first row
+  var j;
+  for (j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Fill in the rest of the matrix
+  for (i = 1; i <= b.length; i++) {
+    for (j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) == a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, // substitution
+          Math.min(matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1)); // deletion
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+};
+
 router.post('/fb_checkin', function(req, res) {
   var FB = require('fb');
   FB.setAccessToken(req.body.authToken);
@@ -105,11 +140,11 @@ router.post('/fb_checkin', function(req, res) {
     // use generated token
     FB.setAccessToken(app_access_token);
     // run a Pages query search by name and proximity to location (radius based)
-    FB.api('/search', {
+    FB.api('v2.1/search', {
       q: req.body.name,
       type: 'page',
       center: req.body.latitude + ',' + req.body.longitude,
-      distance: '50'
+      distance: 2000
     }, function(response) {
       if (!response || response.error) {
         console.log(!response ? 'error occurred' : response.error);
@@ -119,7 +154,24 @@ router.post('/fb_checkin', function(req, res) {
         if (response.data && response.data.length > 0) {
           // use the first place returned
           var place_details = response.data[0];
-          console.log(place_details);
+
+          // response.data.sort(function (a, b) {
+          //   return (levenshteinDistance(a.name, req.body.name) -
+          //     levenshteinDistance(b.name, req.body.name));
+          //   // console.log(a,b);
+          //   // console.log(levenshteinDistance(a.name, b.name));
+          //   // console.log(levenshteinDistance(a.name, req.body.name));
+          //   // return levenshteinDistance(a.name, b.name);
+          // });
+          // console.log(response.data);
+          // // console.log(response.data);
+          // // if (querylength - firstLength > querylength - secondLength) {
+          // //   place_details = response.data[1];
+          // // } else {
+          // //   place_details = response.data[0];
+          // // }
+          // place_details = response.data[0];
+
           var place_id = place_details.id;
           // revert back to client access token for proper scope permissions
           FB.setAccessToken(req.body.authToken);
@@ -179,15 +231,63 @@ router.post('/fb_checkin', function(req, res) {
                 currentInsightUser.set('checkins', new_checkins);
                 currentInsightUser.save(null, {
                   success: function(savedUser) {
-                    console.log('Added check-in for user!');
-                    // completed backaend bookkeeping and updated the values
-                    res.status(200).send(checkinResponse);
+                    var newQuuery = new Parse.Query(InsightCheckinClass);
+                    query.equalTo('facebookPlaceId', place_id);
+                    query.first({
+                      success: function(checkinObject) {
+                        if (checkinObject) {
+                          // object exists => add user to object
+                          checkinObject.addUnique('people', savedUser);
+                          checkinObject.save(null, {
+                            success: function(savedCheckin) {
+                              console.log('Added check-in for user!');
+                              // completed backend bookkeeping and updated the values
+                              res.status(200).send(checkinResponse);
+                            },
+                            error: function(obj, err) {
+                              console.log(err);
+                              res.send(err);
+                            }
+                          });
+                        } else {
+                          // create new object with user added
+                          var InsightCheckin = new InsightCheckinClass();
+                          InsightCheckin.save({
+                            facebookPlaceId: place_id,
+                            position: {
+                              latitude: req.body.latitude,
+                              longitude: req.body.longitude
+                            },
+                            name: req.body.name,
+                            people: [savedUser]
+                          }, {
+                            success: function(savedCheckin) {
+                              console.log('Added check-in for user!');
+                              // completed backend bookkeeping and updated the values
+                              res.status(200).send(checkinResponse);
+                            },
+                            error: function(obj, err) {
+                              console.log(err);
+                              res.send(err);
+                            }
+                          });
+                        }
+                      },
+                      error: function(obj, err) {
+                        console.log(err);
+                        res.send(err);
+                      }
+                    });
                   },
                   error: function(obj, err) {
                     console.log('Parse error in uploading check in data.');
                     console.log(err);
                   }
                 });
+              },
+              error: function(obj, err) {
+                console.log(err);
+                res.send(err);
               }
             });
           });
